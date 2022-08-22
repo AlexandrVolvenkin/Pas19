@@ -22,7 +22,7 @@ using namespace std;
 class CStorageDevice : public CDfa
 {
 public:
-    virtual void WritePrepare(uint16_t uiDestination, uint8_t *puiSource, uint16_t uiLength) = 0;
+//    virtual void Write(uint16_t uiDestination, uint8_t *puiSource, uint16_t uiLength) = 0;
     virtual uint8_t Write(uint16_t uiOffset, uint8_t *puiSource, uint16_t uiLength) = 0;
     virtual uint8_t Write(void) = 0;
     virtual uint8_t Read(uint8_t *puiDestination, uint16_t uiOffset, uint16_t uiLength) = 0;
@@ -68,9 +68,9 @@ public:
     };
 
 protected:
-    uint8_t* m_puiBuffer;
-    uint16_t m_uiOffset;
     uint16_t m_nuiByteCounter;
+    uint16_t m_uiOffset;
+    uint8_t* m_puiBuffer;
     uint16_t m_uiLength;
 };
 //-----------------------------------------------------------------------------------------------------
@@ -139,13 +139,15 @@ public:
     virtual ~CDataStore();
     void Init(void);
     void CreateServiceSection(void);
-    void WriteTemporaryServiceSection(void);
-    void WriteServiceSection(void);
+    uint8_t WriteTemporaryServiceSection(void);
+    uint8_t WriteServiceSection(void);
     uint8_t ReadTemporaryServiceSection(void);
     uint8_t ReadServiceSection(void);
     uint16_t ReadBlock(uint8_t * , uint8_t );
 //    bool WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
-    uint16_t WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
+    uint8_t WriteTemporaryBlock(void);
+    uint8_t WriteBlock(void);
+    uint8_t WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
     uint8_t Check(void);
     bool CompareCurrentWithStoredCrc(void);
     void CrcOfBlocksCrcCreate(void);
@@ -185,9 +187,14 @@ public:
     enum
     {
         IDDLE = 0,
-        START_WRITE,
-        READY_TO_WRITE_WAITING,
-        WRITE_END_WAITING,
+
+        START_WRITE_BLOCK_DATA,
+        READY_TO_WRITE_WAITING_BLOCK_DATA,
+        WRITE_END_WAITING_BLOCK_DATA,
+
+        START_WRITE_TEMPORARY_BLOCK_DATA,
+        READY_TO_WRITE_WAITING_TEMPORARY_BLOCK_DATA,
+        WRITE_END_WAITING_TEMPORARY_BLOCK_DATA,
 
         START_WRITE_TEMPORARY_SERVICE_SECTION_DATA,
         READY_TO_WRITE_WAITING_TEMPORARY_SERVICE_SECTION_DATA,
@@ -217,9 +224,10 @@ public:
 
     struct TServiseSectionData
     {
+        uint16_t uiBlocksNumber;
+        uint16_t uiFreeSpaceOffset;
         uint16_t uiLength;
         uint16_t uiEncodedLength;
-        uint16_t uiFreeSpaceOffset;
         // Контрольная сумма вычисленная из массива контрольных сумм блоков, не включая служебный.
         // Сохраняется при первой и последующих записях любых блоков через программатор.
         // Ноль или её несовпадение свидетельствует о том, что база данных создана по умоланию,
@@ -238,7 +246,9 @@ public:
     enum
     {
         // Нулевой байт может быть стёрт при сбое питания.
-        TEMPORARY_SERVICE_SECTION_DATA_BEGIN = 8,
+        TEMPORARY_BLOCK_DATA_BEGIN = 8,
+        TEMPORARY_SERVICE_SECTION_DATA_BEGIN =
+            (TEMPORARY_BLOCK_DATA_BEGIN + MAX_ENCODED_BLOCK_LENGTH),
         SERVICE_SECTION_DATA_BEGIN =
             TEMPORARY_SERVICE_SECTION_DATA_BEGIN +
             (sizeof(struct TServiseSection) + (sizeof(struct TServiseSection) / 2)),
@@ -247,6 +257,11 @@ public:
 
 protected:
 private:
+    // Данные контекста записи блока.
+    uint8_t m_uiBlock;
+    uint8_t* m_puiBlockSource;
+    uint16_t m_uiBlockLength;
+
     CStorageDevice* m_pxStorageDevice;
     // Служебные данные системы хранения.
     TServiseSection m_xServiseSection;
