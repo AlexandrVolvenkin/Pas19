@@ -1,0 +1,62 @@
+# depslib dependency file v1.0
+1661104797 source:d:\projects\cautoprojects\pas19\pas19\src\crc.cpp
+	<stdint.h>
+	"Crc.h"
+
+1661104797 d:\projects\cautoprojects\pas19\pas19\include\crc.h
+
+1661144148 source:d:\projects\cautoprojects\pas19\pas19\src\datastore.cpp
+	<iostream>
+	<string.h>
+	"DataStore.h"
+	"Crc.h"
+	"HammingCodes.h"
+
+1661144387 d:\projects\cautoprojects\pas19\pas19\include\datastore.h
+	<stdint.h>
+	<iostream>
+	<fstream>
+	"DataTypes.h"
+	"Dfa.h"
+	"Timer.h"
+
+1660526168 d:\projects\cautoprojects\pas19\pas19\include\datatypes.h
+	"Configuration.h"
+
+1661104797 d:\projects\cautoprojects\pas19\pas19\include\configuration.h
+
+1661104797 d:\projects\cautoprojects\pas19\pas19\include\dfa.h
+	<stdint.h>
+
+1661104797 d:\projects\cautoprojects\pas19\pas19\include\timer.h
+	<stdint.h>
+
+1661104797 d:\projects\cautoprojects\pas19\pas19\include\hammingcodes.h
+	<stdint.h>
+
+1661104797 source:d:\projects\cautoprojects\pas19\pas19\src\dfa.cpp
+	"Dfa.h"
+
+1661104797 source:d:\projects\cautoprojects\pas19\pas19\src\hammingcodes.cpp
+	"HammingCodes.h"
+	"Crc.h"
+
+1661142053 source:d:\projects\cautoprojects\pas19\pas19\src\main.cpp
+	<iostream>
+	"DataStore.h"
+
+1661104797 source:d:\projects\cautoprojects\pas19\pas19\src\platform.cpp
+	"Platform.h"
+
+1661104797 d:\projects\cautoprojects\pas19\pas19\include\platform.h
+	<stdint.h>
+	<stdio.h>
+	<string.h>
+	<stdlib.h>
+	<errno.h>
+	<assert.h>
+
+1661104797 source:d:\projects\cautoprojects\pas19\pas19\src\timer.cpp
+	"Timer.h"
+	"Platform.h"
+
