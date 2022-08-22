@@ -207,7 +207,6 @@ uint16_t CHammingCodes::HammingCodesToBytes(uint8_t* puiDestination, uint8_t* pu
 {
     uint16_t uiDecodedByteCounter = 0;
     uint16_t uiSourceIndex = 0;
-//    bool bTailIsPresent = false;
 
     // uiEncodedLength = (uiLength * 1.5) (HammingCodes 8 + 4 на один байт приходится 12 закодированных бит - всегда кратно трём).
     // Длина закодированных данных не кратно трём?
@@ -216,13 +215,6 @@ uint16_t CHammingCodes::HammingCodesToBytes(uint8_t* puiDestination, uint8_t* pu
         // Ошибка - не достаточно данных для восстановления.
         return 0;
     }
-
-//    // Количество байт данных нечётное?
-//    if ((uiEncodedLength % 3) == 2)
-//    {
-//        uiEncodedLength -= 2;
-//        bTailIsPresent = true;
-//    }
 
     // Декодируем все данные.
     for (uint16_t i = 0; i < uiEncodedLength; i += 3)
@@ -248,21 +240,6 @@ uint16_t CHammingCodes::HammingCodesToBytes(uint8_t* puiDestination, uint8_t* pu
         // Увеличим количество декодированных байт.
         uiDecodedByteCounter++;
     }
-
-//    if (bTailIsPresent)
-//    {
-//        uint16_t uiData;
-//
-//        uiData = (static_cast<uint16_t>(puiSource[uiSourceIndex]));
-//        // Следующий байт источника.
-//        uiSourceIndex++;
-//        uiData |= (static_cast<uint16_t>(puiSource[uiSourceIndex]) << 8);
-//
-//        // Восстановим закодированный байт.
-//        puiDestination[uiDecodedByteCounter] = Recovery(uiData & 0x0FFF);
-//        // Увеличим количество декодированных байт.
-//        uiDecodedByteCounter++;
-//    }
 
     return uiDecodedByteCounter;
 }

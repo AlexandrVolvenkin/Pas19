@@ -107,6 +107,13 @@ void CDataStore::CreateServiceSection(void)
 //-----------------------------------------------------------------------------------------------------
 void CDataStore::WriteTemporaryServiceSection(void)
 {
+//    // Автомат не готов к записи?
+//    if (GetFsmState() != IDDLE)
+//    {
+//        SetFsmEvent(WRITE_ERROR_FSM_EVENT);
+//        return 0;
+//    }
+
     // Вычислим контрольную сумму.
     m_xServiseSection.uiCrc =
         usCrc16(reinterpret_cast<uint8_t*>(&m_xServiseSection.xServiseSectionData),
@@ -117,14 +124,25 @@ void CDataStore::WriteTemporaryServiceSection(void)
                                            reinterpret_cast<uint8_t*>(&m_xServiseSection),
                                            sizeof(struct TServiseSection));
 
-    m_pxStorageDevice -> Write(TEMPORARY_SERVICE_SECTION_DATA_BEGIN,
-                               m_puiIntermediateBuff,
-                               uiEncodedByteCounter);
+    m_pxStorageDevice -> WritePrepare(TEMPORARY_SERVICE_SECTION_DATA_BEGIN,
+                                      m_puiIntermediateBuff,
+                                      uiEncodedByteCounter);
+
+//    SetFsmEvent(WRITE_IN_PROGRESS_FSM_EVENT);
+//    // Запустим процесс записи.
+//    SetFsmState(START_WRITE_TEMPORARY_SERVICE_SECTION_DATA);
 }
 
 //-----------------------------------------------------------------------------------------------------
 void CDataStore::WriteServiceSection(void)
 {
+//    // Автомат не готов к записи?
+//    if (GetFsmState() != IDDLE)
+//    {
+//        SetFsmEvent(WRITE_ERROR_FSM_EVENT);
+//        return 0;
+//    }
+
     // Вычислим контрольную сумму.
     m_xServiseSection.uiCrc =
         usCrc16(reinterpret_cast<uint8_t*>(&m_xServiseSection.xServiseSectionData),
@@ -135,18 +153,25 @@ void CDataStore::WriteServiceSection(void)
                                            reinterpret_cast<uint8_t*>(&m_xServiseSection),
                                            sizeof(struct TServiseSection));
 
-    m_pxStorageDevice -> Write(SERVICE_SECTION_DATA_BEGIN,
-                               m_puiIntermediateBuff,
-                               uiEncodedByteCounter);
+    m_pxStorageDevice -> WritePrepare(SERVICE_SECTION_DATA_BEGIN,
+                                      m_puiIntermediateBuff,
+                                      uiEncodedByteCounter);
+
+//    SetFsmEvent(WRITE_IN_PROGRESS_FSM_EVENT);
+//    // Запустим процесс записи.
+//    SetFsmState(START_WRITE_TEMPORARY_SERVICE_SECTION_DATA);
 }
 
 //-----------------------------------------------------------------------------------------------------
 uint8_t CDataStore::ReadTemporaryServiceSection(void)
 {
+    uint16_t uiEncodedLength =
+        (CHammingCodes::CalculateEncodedDataLength(sizeof(struct TServiseSection)));
+
     // Прочитаем закодированные данные.
     if (m_pxStorageDevice -> Read(m_puiIntermediateBuff,
                                   TEMPORARY_SERVICE_SECTION_DATA_BEGIN,
-                                  sizeof(struct TServiseSection)))
+                                  uiEncodedLength)))
     {
         // Нет данных.
         return 0;
@@ -154,8 +179,8 @@ uint8_t CDataStore::ReadTemporaryServiceSection(void)
 
     // Декодируем прочитанные данные.
     CHammingCodes::HammingCodesToBytes(reinterpret_cast<uint8_t*>(&m_xServiseSection),
-                                       m_puiIntermediateBuff,
-                                       sizeof(struct TServiseSection));
+                  m_puiIntermediateBuff,
+                  sizeof(struct TServiseSection));
 
     // Блок не повреждён?
     if (m_xServiseSection.uiCrc ==
@@ -261,8 +286,15 @@ uint16_t CDataStore::ReadBlock(uint8_t *puiDestination, uint8_t uiBlock)
 }
 
 //-----------------------------------------------------------------------------------------------------
-uint16_t CDataStore::Write(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock)
+uint16_t CDataStore::WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock)
 {
+    // Автомат не готов к записи?
+    if (GetFsmState() != IDDLE)
+    {
+        SetFsmEvent(WRITE_ERROR_FSM_EVENT);
+        return 0;
+    }
+
     // Произошёл выход за границы буфера?
     if (uiBlock >= MAX_BLOCKS_NUMBER)
     {
@@ -302,35 +334,39 @@ uint16_t CDataStore::Write(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBloc
                                       m_puiIntermediateBuff,
                                       uiEncodedByteCounter);
 
+    SetFsmEvent(WRITE_IN_PROGRESS_FSM_EVENT);
+    // Запустим процесс записи.
+    SetFsmState(START_WRITE);
+
     // Out length.
     return uiEncodedByteCounter;
 }
 
-//-----------------------------------------------------------------------------------------------------
-bool CDataStore::WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock)
-{
-    if (GetFsmState() == IDDLE)
-    {
-        if (Write(puiSource,
-                  uiLength,
-                  uiBlock))
-        {
-            SetFsmEvent(WRITE_IN_PROGRESS_FSM_EVENT);
-            SetFsmState(START_WRITE);
-            return true;
-        }
-        else
-        {
-            SetFsmEvent(WRITE_ERROR_FSM_EVENT);
-            return false;
-        }
-    }
-    else
-    {
-        SetFsmEvent(STORAGE_DEVICE_BUSY_FSM_EVENT);
-        return false;
-    }
-}
+////-----------------------------------------------------------------------------------------------------
+//bool CDataStore::WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock)
+//{
+//    if (GetFsmState() == IDDLE)
+//    {
+//        if (Write(puiSource,
+//                  uiLength,
+//                  uiBlock))
+//        {
+//            SetFsmEvent(WRITE_IN_PROGRESS_FSM_EVENT);
+//            SetFsmState(START_WRITE);
+//            return true;
+//        }
+//        else
+//        {
+//            SetFsmEvent(WRITE_ERROR_FSM_EVENT);
+//            return false;
+//        }
+//    }
+//    else
+//    {
+//        SetFsmEvent(STORAGE_DEVICE_BUSY_FSM_EVENT);
+//        return false;
+//    }
+//}
 
 //-----------------------------------------------------------------------------------------------------
 bool CDataStore::CompareCurrentWithStoredCrc(void)
@@ -582,9 +618,67 @@ void CDataStore::Fsm(void)
         }
         break;
 
+//-----------------------------------------------------------------------------------------------------
+        // Запись временного служеьного блока.
+    case START_WRITE_TEMPORARY_SERVICE_SECTION_DATA:
+        SetFsmEvent(WRITE_IN_PROGRESS_FSM_EVENT);
+        // Данные обновлены.
+        // Сохраним изменённый служебный контекст.
+        WriteTemporaryServiceSection();
+        // Установим время ожидания готовности к записи.
+        GetTimerPointer() -> Set(READY_TO_WRITE_WAITING_TIMEOUT);
+        SetFsmState(READY_TO_WRITE_WAITING_TEMPORARY_SERVICE_SECTION_DATA);
+        break;
+
+    case READY_TO_WRITE_WAITING_TEMPORARY_SERVICE_SECTION_DATA:
+        if (m_pxStorageDevice -> IsReadyToWrite())
+        {
+            // Установим время ожидания окончания записи.
+            GetTimerPointer() -> Set(WRITE_END_WAITING_TIMEOUT);
+            m_pxStorageDevice -> SetIsDataWrited(false);
+            m_pxStorageDevice -> Write();
+            SetFsmState(WRITE_END_WAITING_TEMPORARY_SERVICE_SECTION_DATA);
+        }
+        // Время ожидания готовности к записи закончилось?
+        else if (GetTimerPointer() -> IsOverflow())
+        {
+            SetFsmEvent(WRITE_ERROR_FSM_EVENT);
+//            // Восстановим служебные данные.
+//            ReadServiceSection();
+            SetFsmState(IDDLE);
+        }
+        break;
+
+    case WRITE_END_WAITING_TEMPORARY_SERVICE_SECTION_DATA:
+        if (m_pxStorageDevice -> IsDataWrited())
+        {
+            if (ReadTemporaryServiceSection())
+            {
+                cerr << "ReadTemporaryServiceSection ok" << endl;
+                SetFsmEvent(WRITE_OK_FSM_EVENT);
+                SetFsmState(START_WRITE_SERVICE_SECTION_DATA);
+            }
+            else
+            {
+                cerr << "ReadTemporaryServiceSection error" << endl;
+                SetFsmEvent(WRITE_ERROR_FSM_EVENT);
+                SetFsmState(IDDLE);
+            }
+        }
+        // Время ожидания окончания записи закончилось?
+        else if (GetTimerPointer() -> IsOverflow())
+        {
+            SetFsmEvent(WRITE_ERROR_FSM_EVENT);
+//            // Восстановим служебные данные.
+//            ReadServiceSection();
+            SetFsmState(IDDLE);
+        }
+        break;
+
 
         // Запись служеьного блока.
     case START_WRITE_SERVICE_SECTION_DATA:
+        SetFsmEvent(WRITE_IN_PROGRESS_FSM_EVENT);
         // Данные обновлены.
         // Сохраним изменённый служебный контекст.
         WriteServiceSection();
@@ -606,8 +700,8 @@ void CDataStore::Fsm(void)
         else if (GetTimerPointer() -> IsOverflow())
         {
             SetFsmEvent(WRITE_ERROR_FSM_EVENT);
-            // Восстановим служебные данные.
-            ReadServiceSection();
+//            // Восстановим служебные данные.
+//            ReadServiceSection();
             SetFsmState(IDDLE);
         }
         break;
@@ -615,15 +709,25 @@ void CDataStore::Fsm(void)
     case WRITE_END_WAITING_SERVICE_SECTION_DATA:
         if (m_pxStorageDevice -> IsDataWrited())
         {
-            SetFsmEvent(WRITE_OK_FSM_EVENT);
-            SetFsmState(IDDLE);
+            if (ReadServiceSection())
+            {
+                cerr << "ReadServiceSection ok" << endl;
+                SetFsmEvent(WRITE_OK_FSM_EVENT);
+                SetFsmState(IDDLE);
+            }
+            else
+            {
+                cerr << "ReadServiceSection error" << endl;
+                SetFsmEvent(WRITE_ERROR_FSM_EVENT);
+                SetFsmState(IDDLE);
+            }
         }
         // Время ожидания окончания записи закончилось?
         else if (GetTimerPointer() -> IsOverflow())
         {
             SetFsmEvent(WRITE_ERROR_FSM_EVENT);
-            // Восстановим служебные данные.
-            ReadServiceSection();
+//            // Восстановим служебные данные.
+//            ReadServiceSection();
             SetFsmState(IDDLE);
         }
         break;
@@ -672,8 +776,6 @@ uint8_t CStorageDeviceFileSystem::Write(uint16_t uiOffset, uint8_t *puiSource, u
 {
     cout << "CStorageDeviceFileSystem::Write uiOffset" << " " << (int)uiOffset << endl;
     cout << "CStorageDeviceFileSystem::Write uiLength" << " " << (int)uiLength << endl;
-    
-//    cout << "CStorageDeviceFileSystem::Write pccFileName" << " " << pccFileName << endl;
     if ((uiOffset + uiLength) < MAX_BUFFER_LENGTH)
     {
         ofstream outdata;
@@ -719,6 +821,8 @@ uint8_t CStorageDeviceFileSystem::Write(void)
 //-----------------------------------------------------------------------------------------------------
 uint8_t CStorageDeviceFileSystem::Read(uint8_t *puiDestination, uint16_t uiOffset, uint16_t uiLength)
 {
+    cout << "CStorageDeviceFileSystem::Read uiOffset" << " " << (int)uiOffset << endl;
+    cout << "CStorageDeviceFileSystem::Read uiLength" << " " << (int)uiLength << endl;
     if ((uiOffset + uiLength) < MAX_BUFFER_LENGTH)
     {
         ifstream indata;

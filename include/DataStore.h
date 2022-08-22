@@ -144,8 +144,8 @@ public:
     uint8_t ReadTemporaryServiceSection(void);
     uint8_t ReadServiceSection(void);
     uint16_t ReadBlock(uint8_t * , uint8_t );
-    bool WriteBlock(uint8_t * , uint16_t , uint8_t );
-    uint16_t Write(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
+//    bool WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
+    uint16_t WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
     uint8_t Check(void);
     bool CompareCurrentWithStoredCrc(void);
     void CrcOfBlocksCrcCreate(void);
@@ -188,6 +188,10 @@ public:
         START_WRITE,
         READY_TO_WRITE_WAITING,
         WRITE_END_WAITING,
+
+        START_WRITE_TEMPORARY_SERVICE_SECTION_DATA,
+        READY_TO_WRITE_WAITING_TEMPORARY_SERVICE_SECTION_DATA,
+        WRITE_END_WAITING_TEMPORARY_SERVICE_SECTION_DATA,
 
         START_WRITE_SERVICE_SECTION_DATA,
         READY_TO_WRITE_WAITING_SERVICE_SECTION_DATA,
