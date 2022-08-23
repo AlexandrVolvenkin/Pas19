@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "MainProductionCycle.h"
 #include "DataStore.h"
 
 using namespace std;
@@ -27,15 +28,41 @@ uint8_t auiTempBlock[]
 //-----------------------------------------------------------------------------------------------------
 int main()
 {
+//    CMainProductionCycle xMainProductionCycle;
+//
+//    while (1)
+//    {
+//        xMainProductionCycle.Fsm();
+//    }
+
+
+
+
     cout << "Hello world!" << endl;
 
     CDataStore* pxDataStoreFileSystem = new CDataStore(new CStorageDeviceFileSystem);
 
-    pxDataStoreFileSystem -> CreateServiceSection();
+
+    if (!(pxDataStoreFileSystem -> Check()))
+    {
+        cerr << "DataStore check error" << endl;
+        cout << "CreateServiceSection" << endl;
+        pxDataStoreFileSystem -> CreateServiceSection();
+    }
+    else
+    {
+        cerr << "DataStore check ok" << endl;
+    }
+
+//    if (!(pxDataStoreFileSystem -> ReadServiceSection()))
+//    {
+//        cout << "CreateServiceSection" << endl;
+//        pxDataStoreFileSystem -> CreateServiceSection();
+//    }
 
 
 
-    pxDataStoreFileSystem -> WriteBlock(auiTempBlock, sizeof(auiTempBlock), 0);
+//    pxDataStoreFileSystem -> WriteBlock(auiTempBlock, sizeof(auiTempBlock), 0);
 
 ////    pxDataStoreFileSystem -> SetFsmEvent(CDataStore::WRITE_IN_PROGRESS_FSM_EVENT);
 //    // Запустим процесс записи.
@@ -59,16 +86,16 @@ int main()
 
 
 
-    uint8_t auiTempArray[512];
-
-    if (pxDataStoreFileSystem -> ReadBlock(auiTempArray, 0))
-    {
-        cerr << "ReadBlock ok" << endl;
-    }
-    else
-    {
-        cerr << "ReadBlock error" << endl;
-    }
+//    uint8_t auiTempArray[512];
+//
+//    if (pxDataStoreFileSystem -> ReadBlock(auiTempArray, 0))
+//    {
+//        cerr << "ReadBlock ok" << endl;
+//    }
+//    else
+//    {
+//        cerr << "ReadBlock error" << endl;
+//    }
 
     delete pxDataStoreFileSystem;
     return 0;

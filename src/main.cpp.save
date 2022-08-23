@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "MainProductionCycle.h"
 #include "DataStore.h"
 
 using namespace std;
@@ -27,11 +28,33 @@ uint8_t auiTempBlock[]
 //-----------------------------------------------------------------------------------------------------
 int main()
 {
+//    CMainProductionCycle xMainProductionCycle;
+//
+//    while (1)
+//    {
+//        xMainProductionCycle.Fsm();
+//    }
+
+
+
+
     cout << "Hello world!" << endl;
 
     CDataStore* pxDataStoreFileSystem = new CDataStore(new CStorageDeviceFileSystem);
 
-    pxDataStoreFileSystem -> CreateServiceSection();
+
+    if (!(pxDataStoreFileSystem -> ReadServiceSection()))
+    {
+        cout << "CreateServiceSection" << endl;
+        pxDataStoreFileSystem -> CreateServiceSection();
+    }
+Check(void);
+
+    if (!(pxDataStoreFileSystem -> ReadServiceSection()))
+    {
+        cout << "CreateServiceSection" << endl;
+        pxDataStoreFileSystem -> CreateServiceSection();
+    }
 
 
 
@@ -60,14 +83,14 @@ int main()
 
 
     uint8_t auiTempArray[512];
-    
+
     if (pxDataStoreFileSystem -> ReadBlock(auiTempArray, 0))
     {
-        
+        cerr << "ReadBlock ok" << endl;
     }
     else
     {
-        
+        cerr << "ReadBlock error" << endl;
     }
 
     delete pxDataStoreFileSystem;

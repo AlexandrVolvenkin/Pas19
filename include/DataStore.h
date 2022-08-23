@@ -15,120 +15,9 @@
 #include "DataTypes.h"
 #include "Dfa.h"
 #include "Timer.h"
+#include "StorageDevice.h"
 
 using namespace std;
-
-//-----------------------------------------------------------------------------------------------------
-class CStorageDevice : public CDfa
-{
-public:
-//    virtual void Write(uint16_t uiDestination, uint8_t *puiSource, uint16_t uiLength) = 0;
-    virtual uint8_t Write(uint16_t uiOffset, uint8_t *puiSource, uint16_t uiLength) = 0;
-    virtual uint8_t Write(void) = 0;
-    virtual uint8_t Read(uint8_t *puiDestination, uint16_t uiOffset, uint16_t uiLength) = 0;
-    virtual void SetIsDataWrited(bool bStatus) = 0;
-    virtual bool IsDataWrited(void) = 0;
-    virtual bool IsReadyToWrite(void) = 0;
-
-    virtual void SetBufferPointer(uint8_t* puiBuffer)
-    {
-        m_puiBuffer = puiBuffer;
-    };
-
-    virtual uint8_t* GetBufferPointer(void)
-    {
-        return m_puiBuffer;
-    };
-
-    virtual void SetOffset(uint16_t uiOffset)
-    {
-        m_uiOffset = uiOffset;
-    };
-    virtual uint16_t GetOffset(void)
-    {
-        return m_uiOffset;
-    };
-
-    virtual void SetLength(uint16_t uiLength)
-    {
-        m_uiLength = uiLength;
-    };
-    virtual uint16_t GetLength(void)
-    {
-        return m_uiLength;
-    };
-
-    virtual void SetByteCounter(uint16_t nuiByteCounter)
-    {
-        m_nuiByteCounter = nuiByteCounter;
-    };
-    virtual uint16_t GetByteCounter(void)
-    {
-        return m_nuiByteCounter;
-    };
-
-protected:
-    uint16_t m_nuiByteCounter;
-    uint16_t m_uiOffset;
-    uint8_t* m_puiBuffer;
-    uint16_t m_uiLength;
-};
-//-----------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-//-----------------------------------------------------------------------------------------------------
-class CStorageDeviceFileSystem : public CStorageDevice
-{
-public:
-
-    enum
-    {
-        MAX_BUFFER_LENGTH = 25600,
-    };
-
-    CStorageDeviceFileSystem();
-    virtual ~CStorageDeviceFileSystem();
-    void Init(void);
-    void WritePrepare(uint16_t uiDestination, uint8_t *puiSource, uint16_t uiLength);
-    uint8_t Write(uint16_t uiOffset, uint8_t *puiSource, uint16_t uiLength);
-    uint8_t Write(void);
-    uint8_t Read(uint8_t *puiDestination, uint16_t uiOffset, uint16_t uiLength);
-    bool IsReadyToWrite(void)
-    {
-        return true;
-    };
-
-    void SetIsDataWrited(bool bStatus)
-    {
-        m_bDataIsWrited = bStatus;
-    };
-    bool IsDataWrited(void)
-    {
-        return m_bDataIsWrited;
-    };
-
-    void Fsm(void);
-
-private:
-    const char *pccFileName = "StorageDeviceData.dat";
-    //    ifstream indata;
-//    ofstream outdata;
-    bool m_bDataIsWrited;
-};
-
-//-----------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
 
 //-----------------------------------------------------------------------------------------------------
 class CDataStore : public CDfa
@@ -137,17 +26,20 @@ public:
     CDataStore();
     CDataStore(CStorageDevice* pxStorageDevice);
     virtual ~CDataStore();
-    void Init(void);
     void CreateServiceSection(void);
     uint8_t WriteTemporaryServiceSection(void);
     uint8_t WriteServiceSection(void);
     uint8_t ReadTemporaryServiceSection(void);
     uint8_t ReadServiceSection(void);
+    uint8_t CheckTemporaryBlock(void);
+    uint8_t CheckBlock(void);
     uint16_t ReadBlock(uint8_t * , uint8_t );
 //    bool WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
     uint8_t WriteTemporaryBlock(void);
     uint8_t WriteBlock(void);
     uint8_t WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
+    uint8_t TemporaryServiceSectionAndBlocksCheck(void);
+    uint8_t ServiceSectionAndBlocksCheck(void);
     uint8_t Check(void);
     bool CompareCurrentWithStoredCrc(void);
     void CrcOfBlocksCrcCreate(void);
@@ -173,7 +65,7 @@ public:
         MAX_BLOCK_LENGTH = 256,
         MAX_ENCODED_BLOCK_LENGTH =
             ((MAX_BLOCK_LENGTH + TAIL_LENGTH) + ((MAX_BLOCK_LENGTH + TAIL_LENGTH) / 2)),
-        MAX_BLOCKS_NUMBER = (TDataBase::BLOCKS_QUANTITY + SERVICE_SECTION_DATA_BLOCK_NUMBER),
+        MAX_BLOCKS_NUMBER = 10,//(TDataBase::BLOCKS_QUANTITY + SERVICE_SECTION_DATA_BLOCK_NUMBER),
         INTERMEDIATE_BUFFER_LENGTH = 512,
     };
 
@@ -224,10 +116,11 @@ public:
 
     struct TServiseSectionData
     {
-        uint16_t uiBlocksNumber;
         uint16_t uiFreeSpaceOffset;
         uint16_t uiLength;
         uint16_t uiEncodedLength;
+        uint16_t uiLastWritedBlockNumber;
+        uint16_t uiBlocksNumber;
         // Контрольная сумма вычисленная из массива контрольных сумм блоков, не включая служебный.
         // Сохраняется при первой и последующих записях любых блоков через программатор.
         // Ноль или её несовпадение свидетельствует о том, что база данных создана по умоланию,
@@ -265,7 +158,6 @@ private:
     CStorageDevice* m_pxStorageDevice;
     // Служебные данные системы хранения.
     TServiseSection m_xServiseSection;
-//    TServiseSectionData m_xServiseSectionData;
     // Массив контрольных сумм блоков.
     uint16_t m_auiBlocksCurrentCrc[MAX_BLOCKS_NUMBER];
     uint8_t* m_puiIntermediateBuff;
