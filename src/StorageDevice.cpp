@@ -26,12 +26,8 @@ CStorageDeviceFileSystem::~CStorageDeviceFileSystem()
 }
 
 //-----------------------------------------------------------------------------------------------------
-void CStorageDeviceFileSystem::Init(void)
-{
-}
-
-//-----------------------------------------------------------------------------------------------------
-uint8_t CStorageDeviceFileSystem::Write(uint16_t uiOffset, uint8_t *puiSource, uint16_t uiLength)
+// Передаёт данные контекста записи блока автомату устройства хранения и запускает процесс записи.
+uint8_t CStorageDeviceFileSystem::PassingDataAndStartWrite(uint16_t uiOffset, uint8_t *puiSource, uint16_t uiLength)
 {
     SetOffset(uiOffset);
     SetBufferPointer(puiSource);
@@ -41,8 +37,8 @@ uint8_t CStorageDeviceFileSystem::Write(uint16_t uiOffset, uint8_t *puiSource, u
 }
 
 //-----------------------------------------------------------------------------------------------------
+// Записывает блок данных в устройство хранения.
 uint8_t CStorageDeviceFileSystem::Write()
-//uint8_t CStorageDeviceFileSystem::Write(uint16_t uiOffset, uint8_t *puiSource, uint16_t uiLength)
 {
     uint16_t uiOffset = m_uiOffset;
     uint8_t *puiSource = m_puiBuffer;
@@ -84,15 +80,8 @@ uint8_t CStorageDeviceFileSystem::Write()
     }
 }
 
-////-----------------------------------------------------------------------------------------------------
-//uint8_t CStorageDeviceFileSystem::Write(void)
-//{
-//    return Write(GetOffset(),
-//                 GetBufferPointer(),
-//                 GetLength());
-//}
-
 //-----------------------------------------------------------------------------------------------------
+// Считывает блок данных из устройства хранения.
 uint8_t CStorageDeviceFileSystem::Read(uint8_t *puiDestination, uint16_t uiOffset, uint16_t uiLength)
 {
 //    cout << "CStorageDeviceFileSystem::Read uiOffset" << " " << (int)uiOffset << endl;

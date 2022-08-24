@@ -43,55 +43,82 @@ int main()
     CDataStore* pxDataStoreFileSystem = new CDataStore(new CStorageDeviceFileSystem);
 
 
-    if (!(pxDataStoreFileSystem -> ReadServiceSection()))
+    if (!(pxDataStoreFileSystem -> Check()))
     {
+        cerr << "DataStore check error" << endl;
         cout << "CreateServiceSection" << endl;
         pxDataStoreFileSystem -> CreateServiceSection();
-    }
-Check(void);
 
-    if (!(pxDataStoreFileSystem -> ReadServiceSection()))
+        pxDataStoreFileSystem -> PassingBlockDataAndStartWrite(auiTempBlock, sizeof(auiTempBlock), 0);
+        do
+        {
+            pxDataStoreFileSystem -> Fsm();
+        }
+        while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
+
+
+        pxDataStoreFileSystem -> PassingBlockDataAndStartWrite(auiTempBlock, sizeof(auiTempBlock), 1);
+        do
+        {
+            pxDataStoreFileSystem -> Fsm();
+        }
+        while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
+
+        pxDataStoreFileSystem -> PassingBlockDataAndStartWrite(auiTempBlock, sizeof(auiTempBlock), 2);
+        do
+        {
+            pxDataStoreFileSystem -> Fsm();
+        }
+        while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
+
+        pxDataStoreFileSystem -> PassingBlockDataAndStartWrite(auiTempBlock, sizeof(auiTempBlock), 3);
+        do
+        {
+            pxDataStoreFileSystem -> Fsm();
+        }
+        while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
+
+        pxDataStoreFileSystem -> PassingBlockDataAndStartWrite(auiTempBlock, sizeof(auiTempBlock), 4);л
+        do
+        {
+            pxDataStoreFileSystem -> Fsm();
+        }
+        while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
+    }
+    else
     {
-        cout << "CreateServiceSection" << endl;
-        pxDataStoreFileSystem -> CreateServiceSection();
+        cerr << "DataStore check ok" << endl;
     }
 
+//    if (!(pxDataStoreFileSystem -> ReadServiceSection()))
+//    {
+//        cout << "CreateServiceSection" << endl;
+//        pxDataStoreFileSystem -> CreateServiceSection();
+//    }
 
 
-    pxDataStoreFileSystem -> WriteBlock(auiTempBlock, sizeof(auiTempBlock), 0);
+
+//    pxDataStoreFileSystem -> BlockWritePrepare(auiTempBlock, sizeof(auiTempBlock), 0);
 
 ////    pxDataStoreFileSystem -> SetFsmEvent(CDataStore::WRITE_IN_PROGRESS_FSM_EVENT);
 //    // Запустим процесс записи.
 //    pxDataStoreFileSystem -> SetFsmState(CDataStore::START_WRITE_TEMPORARY_SERVICE_SECTION_DATA);
 
-//    pxDataStoreFileSystem -> WriteTemporaryServiceSection();
+//    pxDataStoreFileSystem -> TemporaryServiceSectionWritePrepare();
 
-    do
-    {
-        pxDataStoreFileSystem -> Fsm();
-    }
-    while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
 
-//    pxDataStoreFileSystem -> WriteServiceSection();
+
+
+//    uint8_t auiTempArray[512];
 //
-//    do
+//    if (pxDataStoreFileSystem -> ReadBlock(auiTempArray, 0))
 //    {
-//        pxDataStoreFileSystem -> Fsm();
+//        cerr << "ReadBlock ok" << endl;
 //    }
-//    while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
-
-
-
-    uint8_t auiTempArray[512];
-
-    if (pxDataStoreFileSystem -> ReadBlock(auiTempArray, 0))
-    {
-        cerr << "ReadBlock ok" << endl;
-    }
-    else
-    {
-        cerr << "ReadBlock error" << endl;
-    }
+//    else
+//    {
+//        cerr << "ReadBlock error" << endl;
+//    }
 
     delete pxDataStoreFileSystem;
     return 0;

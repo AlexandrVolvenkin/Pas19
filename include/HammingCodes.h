@@ -99,13 +99,6 @@ public:
 
 //    CHammingCodes();
 //    virtual ~CHammingCodes();
-    static uint16_t enHamming(uint8_t data);
-    static uint8_t getEvenParityforTx(uint8_t data);
-    static uint8_t findHammingError(uint16_t hamming);
-    static uint8_t getEvenParityforRx(uint16_t data);
-    static uint16_t fixError(uint16_t hammingData, uint8_t errorCode);
-    static uint8_t deHamming(uint16_t hammingData);
-    static uint8_t Recovery(uint16_t uiHammingData);
     static uint16_t CalculateEncodedDataLength(uint16_t uiLength);
     static uint16_t BytesToHammingCodes(uint8_t* puiDestination, uint8_t* puiSource, uint16_t uiLength);
     static uint16_t HammingCodesToBytes(uint8_t* puiDestination, uint8_t* puiSource, uint16_t uiEncodedLength);
@@ -121,6 +114,14 @@ public:
 
 protected:
 private:
+    static uint16_t enHamming(uint8_t data);
+    static uint8_t getEvenParityforTx(uint8_t data);
+    static uint8_t findHammingError(uint16_t hamming);
+    static uint8_t getEvenParityforRx(uint16_t data);
+    static uint16_t fixError(uint16_t hammingData, uint8_t errorCode);
+    static uint8_t deHamming(uint16_t hammingData);
+    static uint8_t Recovery(uint16_t uiHammingData);
+
     static uint8_t m_uiErrorCode;
 };
 

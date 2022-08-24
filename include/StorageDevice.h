@@ -23,8 +23,7 @@ using namespace std;
 class CStorageDevice : public CDfa
 {
 public:
-//    virtual void Write(uint16_t uiDestination, uint8_t *puiSource, uint16_t uiLength) = 0;
-    virtual uint8_t Write(uint16_t uiOffset, uint8_t *puiSource, uint16_t uiLength) = 0;
+    virtual uint8_t PassingDataAndStartWrite(uint16_t uiOffset, uint8_t *puiSource, uint16_t uiLength) = 0;
     virtual uint8_t Write(void) = 0;
     virtual uint8_t Read(uint8_t *puiDestination, uint16_t uiOffset, uint16_t uiLength) = 0;
     virtual void SetIsDataWrited(bool bStatus) = 0;
@@ -94,16 +93,15 @@ public:
 
     CStorageDeviceFileSystem();
     virtual ~CStorageDeviceFileSystem();
-    void Init(void);
-    void WritePrepare(uint16_t uiDestination, uint8_t *puiSource, uint16_t uiLength);
-    uint8_t Write(uint16_t uiOffset, uint8_t *puiSource, uint16_t uiLength);
-    uint8_t Write(void);
+
+    uint8_t PassingDataAndStartWrite(uint16_t uiOffset, uint8_t *puiSource, uint16_t uiLength);
     uint8_t Read(uint8_t *puiDestination, uint16_t uiOffset, uint16_t uiLength);
     bool IsReadyToWrite(void)
     {
+        // Симулируем готовность к записи.
+        // В случае записи средствами ОС проверка не проводится.
         return true;
     };
-
     void SetIsDataWrited(bool bStatus)
     {
         m_bDataIsWrited = bStatus;
@@ -114,7 +112,10 @@ public:
     };
 
 private:
+    uint8_t Write(void);
+
     const char *pccFileName = "StorageDeviceData.dat";
+    // Флаг - данные записаны.
     bool m_bDataIsWrited;
 };
 

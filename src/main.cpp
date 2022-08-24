@@ -48,7 +48,42 @@ int main()
         cerr << "DataStore check error" << endl;
         cout << "CreateServiceSection" << endl;
         pxDataStoreFileSystem -> CreateServiceSection();
-        pxDataStoreFileSystem -> WriteBlock(auiTempBlock, sizeof(auiTempBlock), 0);
+
+        pxDataStoreFileSystem -> PassingBlockDataAndStartWrite(auiTempBlock, sizeof(auiTempBlock), 0);
+        do
+        {
+            pxDataStoreFileSystem -> Fsm();
+        }
+        while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
+
+
+        pxDataStoreFileSystem -> PassingBlockDataAndStartWrite(auiTempBlock, sizeof(auiTempBlock), 1);
+        do
+        {
+            pxDataStoreFileSystem -> Fsm();
+        }
+        while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
+
+        pxDataStoreFileSystem -> PassingBlockDataAndStartWrite(auiTempBlock, sizeof(auiTempBlock), 2);
+        do
+        {
+            pxDataStoreFileSystem -> Fsm();
+        }
+        while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
+
+        pxDataStoreFileSystem -> PassingBlockDataAndStartWrite(auiTempBlock, sizeof(auiTempBlock), 3);
+        do
+        {
+            pxDataStoreFileSystem -> Fsm();
+        }
+        while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
+
+        pxDataStoreFileSystem -> PassingBlockDataAndStartWrite(auiTempBlock, sizeof(auiTempBlock), 4);
+        do
+        {
+            pxDataStoreFileSystem -> Fsm();
+        }
+        while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
     }
     else
     {
@@ -63,27 +98,14 @@ int main()
 
 
 
-//    pxDataStoreFileSystem -> WriteBlock(auiTempBlock, sizeof(auiTempBlock), 0);
+//    pxDataStoreFileSystem -> BlockWritePrepare(auiTempBlock, sizeof(auiTempBlock), 0);
 
 ////    pxDataStoreFileSystem -> SetFsmEvent(CDataStore::WRITE_IN_PROGRESS_FSM_EVENT);
 //    // Запустим процесс записи.
 //    pxDataStoreFileSystem -> SetFsmState(CDataStore::START_WRITE_TEMPORARY_SERVICE_SECTION_DATA);
 
-//    pxDataStoreFileSystem -> WriteTemporaryServiceSection();
+//    pxDataStoreFileSystem -> TemporaryServiceSectionWritePrepare();
 
-    do
-    {
-        pxDataStoreFileSystem -> Fsm();
-    }
-    while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
-
-//    pxDataStoreFileSystem -> WriteServiceSection();
-//
-//    do
-//    {
-//        pxDataStoreFileSystem -> Fsm();
-//    }
-//    while (pxDataStoreFileSystem -> GetFsmState() != CDataStore::IDDLE);
 
 
 

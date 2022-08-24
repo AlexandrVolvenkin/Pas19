@@ -17,17 +17,16 @@ public:
     CDfaLite();
     virtual ~CDfaLite();
     virtual void Fsm(void);
+    void SetFsmState(uint8_t uiData)
+    {
+        m_uiFsmState = uiData;
+    };
     uint8_t GetFsmState(void)
     {
         return m_uiFsmState;
     };
 
 protected:
-    void SetFsmState(uint8_t uiData)
-    {
-        m_uiFsmState = uiData;
-    };
-
     uint8_t m_uiFsmState;
 };
 

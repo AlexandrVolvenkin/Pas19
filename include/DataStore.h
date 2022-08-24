@@ -12,7 +12,6 @@
 #include <iostream>
 #include <fstream>
 
-#include "DataTypes.h"
 #include "Dfa.h"
 #include "Timer.h"
 #include "StorageDevice.h"
@@ -20,6 +19,15 @@
 using namespace std;
 
 //-----------------------------------------------------------------------------------------------------
+// Хранилище блочых данных.
+// Проверяет целостность данных хранилища.
+// Восстанавлмвает повреждённые данные с помощью алгоритма Хемминга.
+// Восстанавливает данные записываемого блока при сбое питания и т.д.
+// Состав хранилища:
+// 1 - блок служебных данных.
+// 2 - дублирующий блок для записи временных служебных данных.
+// 3 - временная копия записываемого блока.
+// 4 - пространство с последовательно расположенными хранимыми блоками.
 class CDataStore : public CDfa
 {
 public:
@@ -29,7 +37,7 @@ public:
 
     uint8_t Check(void);
     void CreateServiceSection(void);
-    uint8_t WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
+    uint8_t PassingBlockDataAndStartWrite(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
     uint16_t ReadBlock(uint8_t * , uint8_t );
     void CrcOfBlocksCrcCreate(void);
     bool CrcOfBlocksCrcCheck(void);
@@ -42,14 +50,14 @@ public:
 
 
 private:
-    uint8_t WriteTemporaryServiceSection(void);
-    uint8_t WriteServiceSection(void);
+    uint8_t TemporaryServiceSectionWritePrepare(void);
+    uint8_t ServiceSectionWritePrepare(void);
     uint8_t ReadTemporaryServiceSection(void);
     uint8_t ReadServiceSection(void);
     uint8_t CheckTemporaryBlock(void);
     uint8_t CheckBlock(void);
-    uint8_t WriteTemporaryBlock(void);
-    uint8_t WriteBlock(void);
+    uint8_t TemporaryBlockWritePrepare(void);
+    uint8_t BlockWritePrepare(void);
     CTimer* GetTimerPointer(void)
     {
         return &m_xTimer;
@@ -60,17 +68,14 @@ public:
     {
         CRC_LENGTH = 2,
         TAIL_LENGTH = 2,
-        SERVICE_SECTION_DATA_BLOCK_NUMBER = 1,
         MAX_BLOCK_LENGTH = 256,
         MAX_ENCODED_BLOCK_LENGTH =
             ((MAX_BLOCK_LENGTH + TAIL_LENGTH) + ((MAX_BLOCK_LENGTH + TAIL_LENGTH) / 2)),
         MAX_BLOCKS_NUMBER = 10,//(TDataBase::BLOCKS_QUANTITY + SERVICE_SECTION_DATA_BLOCK_NUMBER),
-        INTERMEDIATE_BUFFER_LENGTH = 512,
     };
 
     enum
     {
-        SERVICE_SECTION_DATA = 0,
         READY_TO_WRITE_WAITING_TIMEOUT = 200,
         WRITE_END_WAITING_TIMEOUT = 10000,
     };
@@ -107,16 +112,27 @@ public:
 
     struct TBlockPositionData
     {
+        // Смещение на данные блока.
         uint16_t uiOffset;
+        // Размер хранимого блока.
         uint16_t uiLength;
+        // Размер закодированного хранимого блока.
         uint16_t uiEncodedLength;
+        // Crc блока хранится отдельно от него в служебном блоке.
+        // По его совпадению определяется целостность блока и его принадлежность к хранилищу.
         uint16_t uiCrc;
     };
 
     struct TServiseSectionData
     {
+        // Смещение на свободное место для записи нового блока.
         uint16_t uiFreeSpaceOffset;
+        // Размер служебного блока.
         uint16_t uiLength;
+        // Размер закодированных служебного блока.
+        // Используется самовосстанавливающийся код Хемминга(8,4).
+        // Коэффициент - 1.5: один байт преобразуется в кодовое слово 12 бит,
+        // из двух байт полезных данных получается три байта кодированных.
         uint16_t uiEncodedLength;
 //        uint16_t uiLastWritedBlockNumber;
         uint16_t uiStoredBlocksNumber;
@@ -132,6 +148,7 @@ public:
     struct TServiseSection
     {
         TServiseSectionData xServiseSectionData;
+        // Crc служебного блока.
         uint16_t uiCrc;
     };
 
@@ -154,11 +171,13 @@ private:
     uint8_t* m_puiBlockSource;
     uint16_t m_uiBlockLength;
 
+    // Указатель на объект класса устройства хранения.
     CStorageDevice* m_pxStorageDevice;
     // Служебные данные системы хранения.
     TServiseSection m_xServiseSection;
     // Массив контрольных сумм блоков.
     uint16_t m_auiBlocksCurrentCrc[MAX_BLOCKS_NUMBER];
+    // Вспомогательный буфер.
     uint8_t* m_puiIntermediateBuff;
     CTimer m_xTimer;
 };
