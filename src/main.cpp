@@ -48,6 +48,7 @@ int main()
         cerr << "DataStore check error" << endl;
         cout << "CreateServiceSection" << endl;
         pxDataStoreFileSystem -> CreateServiceSection();
+        pxDataStoreFileSystem -> WriteBlock(auiTempBlock, sizeof(auiTempBlock), 0);
     }
     else
     {

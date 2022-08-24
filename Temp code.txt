@@ -1,0 +1,117 @@
+
+
+//-----------------------------------------------------------------------------------------------------
+// Проверяет целостность и связанность временного служебного блока и блоков хранения.
+// Целостность и связанность блоков определяется совпадением вычисленной и
+// сохранённой во временном служебном блоке Crc текущего блока хранения.
+uint8_t CDataStore::TemporaryServiceSectionAndBlocksCheck(void)
+{
+    // Блок повреждён?
+    if (!(ReadTemporaryServiceSection()))
+    {
+        return 0;
+    }
+
+    uint8_t auiTempArray[MAX_BLOCK_LENGTH];
+
+    cout << "TemporaryServiceSectionAndBlocksCheck uiBlocksNumber" << " " << (int)m_xServiseSection.xServiseSectionData.uiBlocksNumber << endl;
+    for (uint16_t i = 0;
+            i < m_xServiseSection.xServiseSectionData.uiBlocksNumber;
+            i++)
+    {
+        // Блок повреждён?
+        if (!(ReadBlock(m_puiIntermediateBuff, i)))
+        {
+            // Установим индекс блока с сохранённой Crc которого,
+            // будем сравнивать Crc блока сохранённого во временном буфере.
+            m_uiBlock = i;
+            // Crc блока из временного буфера совпадает с Crc блока
+            // сохранённого во временном служебном буфере по текущему индексу?
+            if (CheckTemporaryBlock())
+            {
+                memcpy(auiTempArray,
+                       m_puiIntermediateBuff,
+                       m_xServiseSection.xServiseSectionData.
+                       axBlockPositionData[i].uiLength);
+                // Данные блока успешно записаны во временные буферы,
+                // но при записи в хранилище произошёл сбой.
+                // Требуется повторная запись данных из временных буферов в хранилище.
+                WriteBlock(auiTempArray,
+                           m_xServiseSection.xServiseSectionData.
+                           axBlockPositionData[i].uiLength,
+                           i);
+
+//                do
+//                {
+//                    Fsm();
+//                }
+//                while (GetFsmState() != CDataStore::IDDLE);
+
+                // Блок не повреждён?
+                if (!(ReadBlock(m_puiIntermediateBuff, i)))
+                {
+                    return 0;
+                }
+            }
+        }
+        else
+        {
+            // Блок восстановлен после обнаружения ошибки?
+            if (CHammingCodes::GetErrorCode() != CHammingCodes::NONE_ERROR)
+            {
+                CHammingCodes::SetErrorCode(0);
+                cout << "CHammingCodes::GetErrorCode uiBlock" << (int)i << endl;
+                memcpy(auiTempArray,
+                       m_puiIntermediateBuff,
+                       m_xServiseSection.xServiseSectionData.
+                       axBlockPositionData[i].uiLength);
+                // Требуется повторная запись данных из временных буферов в хранилище.
+                WriteBlock(auiTempArray,
+                           m_xServiseSection.xServiseSectionData.
+                           axBlockPositionData[i].uiLength,
+                           i);
+
+                do
+                {
+                    Fsm();
+                }
+                while (GetFsmState() != CDataStore::IDDLE);
+
+                // Блок не повреждён?
+                if (!(ReadBlock(m_puiIntermediateBuff, i)))
+                {
+                    return 0;
+                }
+            }
+        }
+
+    }
+
+    return 1;
+}
+
+//-----------------------------------------------------------------------------------------------------
+// Проверяет целостность и связанность служебного блока и блоков хранения.
+// Целостность и связанность блоков определяется совпадением вычисленной и
+// сохранённой в служебном блоке Crc текущего блока хранения.
+uint8_t CDataStore::ServiceSectionAndBlocksCheck(void)
+{
+    // Блок повреждён?
+    if (!(ReadServiceSection()))
+    {
+        return 0;
+    }
+
+    for (uint16_t i = 0;
+            i < m_xServiseSection.xServiseSectionData.uiBlocksNumber;
+            i++)
+    {
+        // Блок повреждён?
+        if (!(ReadBlock(m_puiIntermediateBuff, i)))
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}

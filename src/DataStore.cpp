@@ -66,7 +66,7 @@ void CDataStore::CreateServiceSection(void)
         (SERVICE_SECTION_DATA_BEGIN +
          m_xServiseSection.xServiseSectionData.uiEncodedLength);
     // Хранилище пусто.
-    m_xServiseSection.xServiseSectionData.uiBlocksNumber = 0;
+    m_xServiseSection.xServiseSectionData.uiStoredBlocksNumber = 0;
     // Установим признак - хранилище не подписано.
     m_xServiseSection.xServiseSectionData.uiCrcOfBlocksCrc = 0;
 }
@@ -410,7 +410,7 @@ uint8_t CDataStore::WriteTemporaryBlock(void)
         m_xServiseSection.xServiseSectionData.
         axBlockPositionData[uiBlock].uiEncodedLength = uiEncodedByteCounter;
         // Увеличим количество блоков находящихся в хранилище.
-        m_xServiseSection.xServiseSectionData.uiBlocksNumber += 1;
+        m_xServiseSection.xServiseSectionData.uiStoredBlocksNumber += 1;
     }
 
     // Вычислим контрольную сумму поступивших данных.
@@ -461,15 +461,15 @@ uint8_t CDataStore::WriteBlock(void)
         m_xServiseSection.xServiseSectionData.
         axBlockPositionData[uiBlock].uiEncodedLength = uiEncodedByteCounter;
 //        // Увеличим количество блоков находящихся в хранилище.
-//        m_xServiseSection.xServiseSectionData.uiBlocksNumber += 1;
+//        m_xServiseSection.xServiseSectionData.uiStoredBlocksNumber += 1;
     }
 
     // Вычислим контрольную сумму поступивших данных.
     m_xServiseSection.xServiseSectionData.
     axBlockPositionData[uiBlock].uiCrc =
         usCrc16(puiSource, uiLength);
-    // Сохраним индекс последнего записываемого блока.
-    m_xServiseSection.xServiseSectionData.uiLastWritedBlockNumber = uiBlock;
+//    // Сохраним индекс последнего записываемого блока.
+//    m_xServiseSection.xServiseSectionData.uiLastWritedBlockNumber = uiBlock;
 
     if (m_pxStorageDevice -> Write(m_xServiseSection.xServiseSectionData.
                                    axBlockPositionData[uiBlock].uiOffset,
@@ -513,25 +513,6 @@ uint8_t CDataStore::WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t ui
 }
 
 //-----------------------------------------------------------------------------------------------------
-bool CDataStore::CompareCurrentWithStoredCrc(void)
-{
-    // Сравним текущее Crc блока с его Crc сохранённом в служебном блоке в предыдущей сессии записи.
-    for (uint16_t i = SERVICE_SECTION_DATA_BLOCK_NUMBER;
-            i < (MAX_BLOCKS_NUMBER - SERVICE_SECTION_DATA_BLOCK_NUMBER);
-            i++)
-    {
-        if (m_auiBlocksCurrentCrc[i] !=
-                m_xServiseSection.xServiseSectionData.axBlockPositionData[i].uiCrc)
-        {
-            return false;
-        }
-    }
-
-    // Все блоки принадлежат текущей базе данных.
-    return true;
-}
-
-//-----------------------------------------------------------------------------------------------------
 // Вызывается только если база данных подтверждена пользователем.
 void CDataStore::CrcOfBlocksCrcCreate(void)
 {
@@ -540,21 +521,21 @@ void CDataStore::CrcOfBlocksCrcCreate(void)
     // Ноль или её несовпадение свидетельствует о том, что база данных создана по умоланию,
     // и не подтверждена пользователем. В этом случае прибор переходит в режим сигнализации об ошибке,
     // ожидая квитирования или записи базы данных.
-    uint16_t auiBlocksCrc[MAX_BLOCKS_NUMBER - SERVICE_SECTION_DATA_BLOCK_NUMBER];
+    uint16_t auiBlocksCrc[MAX_BLOCKS_NUMBER];
 
-    // Получим Crc всех блоков, не включая служебный.
+    // Получим Crc всех блоков.
     for (uint16_t i = 0;
-            i < (MAX_BLOCKS_NUMBER - SERVICE_SECTION_DATA_BLOCK_NUMBER);
+            i < MAX_BLOCKS_NUMBER;
             i++)
     {
         auiBlocksCrc[i] =
-            m_xServiseSection.xServiseSectionData.axBlockPositionData[i + SERVICE_SECTION_DATA_BLOCK_NUMBER].uiCrc;
+            m_xServiseSection.xServiseSectionData.axBlockPositionData[i].uiCrc;
     }
 
-    // Сохраним Crc всех блоков, не включая служебный.
+    // Сохраним Crc всех блоков.
     m_xServiseSection.xServiseSectionData.uiCrcOfBlocksCrc =
         usCrc16(reinterpret_cast<uint8_t*>(auiBlocksCrc),
-                ((MAX_BLOCKS_NUMBER - SERVICE_SECTION_DATA_BLOCK_NUMBER) * sizeof(uint16_t)));
+                (MAX_BLOCKS_NUMBER * sizeof(uint16_t)));
 
 }
 
@@ -566,21 +547,21 @@ bool CDataStore::CrcOfBlocksCrcCheck(void)
     // Ноль или её несовпадение свидетельствует о том, что база данных создана по умоланию,
     // и не подтверждена пользователем. В этом случае прибор переходит в режим сигнализации об ошибке,
     // ожидая квитирования или записи базы данных.
-    uint16_t auiBlocksCrc[MAX_BLOCKS_NUMBER - SERVICE_SECTION_DATA_BLOCK_NUMBER];
+    uint16_t auiBlocksCrc[MAX_BLOCKS_NUMBER];
 
-    // Получим Crc всех блоков, не включая служебный.
+    // Получим Crc всех блоков.
     for (uint16_t i = 0;
-            i < (MAX_BLOCKS_NUMBER - SERVICE_SECTION_DATA_BLOCK_NUMBER);
+            i < MAX_BLOCKS_NUMBER;
             i++)
     {
         auiBlocksCrc[i] =
-            m_xServiseSection.xServiseSectionData.axBlockPositionData[i + SERVICE_SECTION_DATA_BLOCK_NUMBER].uiCrc;
+            m_xServiseSection.xServiseSectionData.axBlockPositionData[i].uiCrc;
     }
 
     // Crc из Crc всех блоков совпадает с сохранённым в служебном блоке?
     if (m_xServiseSection.xServiseSectionData.uiCrcOfBlocksCrc ==
             usCrc16(reinterpret_cast<uint8_t*>(auiBlocksCrc),
-                    ((MAX_BLOCKS_NUMBER - SERVICE_SECTION_DATA_BLOCK_NUMBER) * sizeof(uint16_t))))
+                    (MAX_BLOCKS_NUMBER * sizeof(uint16_t))))
     {
         return true;
     }
@@ -591,142 +572,40 @@ bool CDataStore::CrcOfBlocksCrcCheck(void)
 }
 
 //-----------------------------------------------------------------------------------------------------
-// Проверяет целостность и связанность временного служебного блока и блоков хранения.
-// Целостность и связанность блоков определяется совпадением вычисленной и
-// сохранённой во временном служебном блоке Crc текущего блока хранения.
-uint8_t CDataStore::TemporaryServiceSectionAndBlocksCheck(void)
-{
-    // Блок повреждён?
-    if (!(ReadTemporaryServiceSection()))
-    {
-        return 0;
-    }
-
-    uint8_t auiTempArray[MAX_BLOCK_LENGTH];
-
-    cout << "TemporaryServiceSectionAndBlocksCheck uiBlocksNumber" << " " << (int)m_xServiseSection.xServiseSectionData.uiBlocksNumber << endl;
-    for (uint16_t i = 0;
-            i < m_xServiseSection.xServiseSectionData.uiBlocksNumber;
-            i++)
-    {
-        // Блок повреждён?
-        if (!(ReadBlock(m_puiIntermediateBuff, i)))
-        {
-            // Установим индекс блока с сохранённой Crc которого,
-            // будем сравнивать Crc блока сохранённого во временном буфере.
-            m_uiBlock = i;
-            // Crc блока из временного буфера совпадает с Crc блока
-            // сохранённого во временном служебном буфере по текущему индексу?
-            if (CheckTemporaryBlock())
-            {
-                memcpy(auiTempArray,
-                       m_puiIntermediateBuff,
-                       m_xServiseSection.xServiseSectionData.
-                       axBlockPositionData[i].uiLength);
-                // Данные блока успешно записаны во временные буферы,
-                // но при записи в хранилище произошёл сбой.
-                // Требуется повторная запись данных из временных буферов в хранилище.
-                WriteBlock(auiTempArray,
-                           m_xServiseSection.xServiseSectionData.
-                           axBlockPositionData[i].uiLength,
-                           i);
-
-//                do
-//                {
-//                    Fsm();
-//                }
-//                while (GetFsmState() != CDataStore::IDDLE);
-
-                // Блок не повреждён?
-                if (!(ReadBlock(m_puiIntermediateBuff, i)))
-                {
-                    return 0;
-                }
-            }
-        }
-        else
-        {
-            // Блок восстановлен после обнаружения ошибки?
-            if (CHammingCodes::GetErrorCode() != CHammingCodes::NONE_ERROR)
-            {
-                CHammingCodes::SetErrorCode(0);
-                cout << "CHammingCodes::GetErrorCode uiBlock" << (int)i << endl;
-                memcpy(auiTempArray,
-                       m_puiIntermediateBuff,
-                       m_xServiseSection.xServiseSectionData.
-                       axBlockPositionData[i].uiLength);
-                // Требуется повторная запись данных из временных буферов в хранилище.
-                WriteBlock(auiTempArray,
-                           m_xServiseSection.xServiseSectionData.
-                           axBlockPositionData[i].uiLength,
-                           i);
-
-                do
-                {
-                    Fsm();
-                }
-                while (GetFsmState() != CDataStore::IDDLE);
-
-                // Блок не повреждён?
-                if (!(ReadBlock(m_puiIntermediateBuff, i)))
-                {
-                    return 0;
-                }
-            }
-        }
-
-    }
-
-    return 1;
-}
-
-//-----------------------------------------------------------------------------------------------------
-// Проверяет целостность и связанность служебного блока и блоков хранения.
-// Целостность и связанность блоков определяется совпадением вычисленной и
-// сохранённой в служебном блоке Crc текущего блока хранения.
-uint8_t CDataStore::ServiceSectionAndBlocksCheck(void)
-{
-    // Блок повреждён?
-    if (!(ReadServiceSection()))
-    {
-        return 0;
-    }
-
-    for (uint16_t i = 0;
-            i < m_xServiseSection.xServiseSectionData.uiBlocksNumber;
-            i++)
-    {
-        // Блок повреждён?
-        if (!(ReadBlock(m_puiIntermediateBuff, i)))
-        {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-//-----------------------------------------------------------------------------------------------------
 uint8_t CDataStore::Check(void)
 {
     enum
     {
         IDDLE = 0,
+
         TEMPORARY_SERVICE_SECTION_DATA_CHECK,
-        TEMPORARY_SERVICE_SECTION_DATA_CHECK_OK_SERVICE_SECTION_DATA_CHECK,
-        TEMPORARY_SERVICE_SECTION_DATA_CHECK_ERROR_SERVICE_SECTION_DATA_CHECK,
+        TEMPORARY_SERVICE_SECTION_LINKED_BLOCKS_CHECK,
 
-        DATA_STORE_CORRUPTED_NEW_VERSION_ACCEPTED,
-        DATA_STORE_CORRUPTED_OLD_VERSION_ACCEPTED,
+        CORRUPTED_BLOCK_WRITE_END_WAITING,
+        SERVICE_SECTION_DATA_WRITE_END_WAITING,
 
-        DATA_STORE_NOT_CORRUPTED,
-        DATA_STORE_CORRUPTED,
+        SERVICE_SECTION_DATA_CHECK,
+        SERVICE_SECTION_LINKED_BLOCKS_CHECK,
+
+        DATA_STORE_NEW_VERSION_ACCEPTED,
+        DATA_STORE_OLD_VERSION_ACCEPTED,
+
+        DATA_STORE_CHECK_OK,
+        DATA_STORE_CHECK_ERROR,
+        DATA_STORE_CHECK_REPEAT,
+    };
+
+    enum
+    {
+        RECOVERY_ATTEMPTS_NUMBER = 3,
     };
 
     uint8_t uiFsmState;
+    uint8_t uiRecoveryAttemptCounter = 0;
+    uint8_t auiTempArray[MAX_BLOCK_LENGTH];
+
     CHammingCodes::SetErrorCode(CHammingCodes::NONE_ERROR);
     uiFsmState = TEMPORARY_SERVICE_SECTION_DATA_CHECK;
-
 
     while (1)
     {
@@ -736,62 +615,197 @@ uint8_t CDataStore::Check(void)
             break;
 
         case TEMPORARY_SERVICE_SECTION_DATA_CHECK:
-            // Блоки не повреждены и связаны с временным служебным блоком?
-            if (TemporaryServiceSectionAndBlocksCheck())
+            // Временный служебный блок не повреждён?
+            if (ReadTemporaryServiceSection())
             {
-                uiFsmState = TEMPORARY_SERVICE_SECTION_DATA_CHECK_OK_SERVICE_SECTION_DATA_CHECK;
+                uiFsmState = TEMPORARY_SERVICE_SECTION_LINKED_BLOCKS_CHECK;
             }
             else
             {
-                uiFsmState = TEMPORARY_SERVICE_SECTION_DATA_CHECK_ERROR_SERVICE_SECTION_DATA_CHECK;
+                // Временный служебный блок повреждён, вероятно во время последнего сеанса записи.
+                // Проверим целостность хранилища по постоянному служебному блоку.
+                uiFsmState = SERVICE_SECTION_DATA_CHECK;
             }
             break;
 
-        case TEMPORARY_SERVICE_SECTION_DATA_CHECK_OK_SERVICE_SECTION_DATA_CHECK:
-            // Блоки не повреждены и связаны со служебным блоком?
-            if (ServiceSectionAndBlocksCheck())
+        case TEMPORARY_SERVICE_SECTION_LINKED_BLOCKS_CHECK:
+            // Проверим связанность блоков хранилища с временным служебным блоком, а следовательно их целостность.
+            for (uint16_t i = 0;
+                    i < m_xServiseSection.xServiseSectionData.uiStoredBlocksNumber;
+                    i++)
             {
-                uiFsmState = DATA_STORE_NOT_CORRUPTED;
+                // Блок не связан с временным служебным буфером(или повреждён)?
+                if (!(ReadBlock(auiTempArray, i)))
+                {
+                    // Установим индекс блока, с сохранённой Crc которого,
+                    // будем сравнивать Crc блока сохранённого во временном буфере.
+                    m_uiBlock = i;
+                    // Crc блока из временного буфера совпадает с Crc блока
+                    // сохранённого во временном служебном буфере по текущему индексу?
+                    if (CheckTemporaryBlock())
+                    {
+                        memcpy(auiTempArray,
+                               m_puiIntermediateBuff,
+                               m_xServiseSection.xServiseSectionData.
+                               axBlockPositionData[i].uiLength);
+                        // Данные блока успешно записаны во временные буферы,
+                        // но при записи в хранилище произошёл сбой.
+                        // Требуется повторная запись данных из временных буферов в хранилище.
+                        WriteBlock(auiTempArray,
+                                   m_xServiseSection.xServiseSectionData.
+                                   axBlockPositionData[i].uiLength,
+                                   i);
+
+                        uiFsmState = CORRUPTED_BLOCK_WRITE_END_WAITING;
+                        break;
+                    }
+                    else
+                    {
+                        // Блок не связан с временным служебным буфером.
+                        // Возможно произошла ошибка во время записи врименного служебного блока.
+                        // Продолжим проверку.
+                        uiFsmState = SERVICE_SECTION_DATA_CHECK;
+                        break;
+                    }
+                }
+                else
+                {
+                    // Блоки восстановлены алгоритмом Хемминга после обнаружения ошибки?
+                    if (CHammingCodes::GetErrorCode() != CHammingCodes::NONE_ERROR)
+                    {
+                        CHammingCodes::SetErrorCode(CHammingCodes::NONE_ERROR);
+                        cout << "CHammingCodes::GetErrorCode uiBlock" << (int)i << endl;
+
+                        // Требуется повторная запись данных в хранилище.
+                        WriteBlock(auiTempArray,
+                                   m_xServiseSection.xServiseSectionData.
+                                   axBlockPositionData[i].uiLength,
+                                   i);
+
+                        uiFsmState = CORRUPTED_BLOCK_WRITE_END_WAITING;
+                        break;
+                    }
+                }
+
+                // Авансом.
+                // Блоки привязаны к временному служебному блоку, следовательно целы.
+                // Как минимум, последний сеанс записи во временные буферы прощёл успешо.
+                // Обновим служебный блок.
+                SetFsmEvent(WRITE_IN_PROGRESS_FSM_EVENT);
+                // Запустим процесс записи служебного блока.
+                SetFsmState(START_WRITE_SERVICE_SECTION_DATA);
+                uiFsmState = SERVICE_SECTION_DATA_WRITE_END_WAITING;
+            }
+            break;
+
+        case CORRUPTED_BLOCK_WRITE_END_WAITING:
+            // Сохранённый во временном буфере блок записан в хранилище?
+            if (GetFsmEvent() == CDataStore::WRITE_OK_FSM_EVENT)
+            {
+                uiFsmState = DATA_STORE_CHECK_REPEAT;
+            }
+            // При записи блока произошла ошибка?
+            else if (GetFsmEvent() == CDataStore::WRITE_ERROR_FSM_EVENT)
+            {
+                uiFsmState = DATA_STORE_CHECK_REPEAT;
+            }
+            break;
+
+        case SERVICE_SECTION_DATA_WRITE_END_WAITING:
+            // Служебный блок записан в хранилище?
+            if (GetFsmEvent() == CDataStore::WRITE_OK_FSM_EVENT)
+            {
+                // Служебный блок не повреждён?
+                if (ReadServiceSection())
+                {
+                    uiFsmState = DATA_STORE_NEW_VERSION_ACCEPTED;
+                }
+                else
+                {
+                    uiFsmState = DATA_STORE_CHECK_REPEAT;
+                }
+            }
+            // При записи блока произошла ошибка?
+            else if (GetFsmEvent() == CDataStore::WRITE_ERROR_FSM_EVENT)
+            {
+                uiFsmState = DATA_STORE_CHECK_REPEAT;
+            }
+            break;
+
+        case SERVICE_SECTION_DATA_CHECK:
+            // Служебный блок не повреждён?
+            if (ReadServiceSection())
+            {
+                uiFsmState = SERVICE_SECTION_LINKED_BLOCKS_CHECK;
             }
             else
             {
-                uiFsmState = DATA_STORE_CORRUPTED_NEW_VERSION_ACCEPTED;
+                uiFsmState = DATA_STORE_CHECK_ERROR;
             }
             break;
 
-        case TEMPORARY_SERVICE_SECTION_DATA_CHECK_ERROR_SERVICE_SECTION_DATA_CHECK:
-            // Блоки не повреждены и связаны со служебным блоком?
-            if (ServiceSectionAndBlocksCheck())
+        case SERVICE_SECTION_LINKED_BLOCKS_CHECK:
+            // Проверим связанность блоков хранилища со служебным блоком, а следовательно их целостность.
+            for (uint16_t i = 0;
+                    i < m_xServiseSection.xServiseSectionData.uiStoredBlocksNumber;
+                    i++)
             {
-                uiFsmState = DATA_STORE_CORRUPTED_OLD_VERSION_ACCEPTED;
+                // Блок не связан со служебным буфером(или повреждён)?
+                if (!(ReadBlock(auiTempArray, i)))
+                {
+                    // Блок не связан с временным служебным буфером.
+                    // Возможно произошла ошибка во время записи служебного блока.
+                    // Восстановить данные нельзя.
+                    uiFsmState = DATA_STORE_CHECK_ERROR;
+                    break;
+                }
+
+                // Авансом.
+                // Блоки привязаны к служебному блоку, следовательно целы.
+                // Восстановим предыдущую копию хранилища.
+                uiFsmState = DATA_STORE_OLD_VERSION_ACCEPTED;
             }
-            else
-            {
-                uiFsmState = DATA_STORE_CORRUPTED;
-            }
             break;
 
-        case DATA_STORE_CORRUPTED_NEW_VERSION_ACCEPTED:
-            uiFsmState = DATA_STORE_NOT_CORRUPTED;
+        case DATA_STORE_NEW_VERSION_ACCEPTED:
+            cerr << "DATA_STORE_NEW_VERSION_ACCEPTED" << endl;
+            return 1;
             break;
 
-        case DATA_STORE_CORRUPTED_OLD_VERSION_ACCEPTED:
-            uiFsmState = DATA_STORE_NOT_CORRUPTED;
+        case DATA_STORE_OLD_VERSION_ACCEPTED:
+            cerr << "DATA_STORE_OLD_VERSION_ACCEPTED" << endl;
+            return 1;
             break;
 
-        case DATA_STORE_CORRUPTED:
+        case DATA_STORE_CHECK_OK:
+            return 1;
+            break;
+
+        case DATA_STORE_CHECK_ERROR:
+            cerr << "DATA_STORE_CHECK_ERROR" << endl;
             return 0;
             break;
 
-        case DATA_STORE_NOT_CORRUPTED:
-            // данные не повреждены.
-            return 1;
+        case DATA_STORE_CHECK_REPEAT:
+            // Ещё есть возможность для восстановления?
+            if (uiRecoveryAttemptCounter < RECOVERY_ATTEMPTS_NUMBER)
+            {
+                uiRecoveryAttemptCounter++;
+                // Повторим повторную проверку хранилища после восстановления.
+                uiFsmState = TEMPORARY_SERVICE_SECTION_DATA_CHECK;
+            }
+            else
+            {
+                uiFsmState = DATA_STORE_CHECK_ERROR;
+            }
             break;
 
         default:
             return 0;
             break;
         }
+
+        Fsm();
     }
 }
 
@@ -847,7 +861,6 @@ void CDataStore::Fsm(void)
             if (CheckTemporaryBlock())
             {
                 cerr << "CheckTemporaryBlock ok" << endl;
-                SetFsmEvent(WRITE_OK_FSM_EVENT);
                 SetFsmState(START_WRITE_TEMPORARY_SERVICE_SECTION_DATA);
             }
             else
@@ -909,7 +922,6 @@ void CDataStore::Fsm(void)
             if (ReadTemporaryServiceSection())
             {
                 cerr << "ReadTemporaryServiceSection ok" << endl;
-                SetFsmEvent(WRITE_OK_FSM_EVENT);
                 SetFsmState(START_WRITE_BLOCK_DATA);
             }
             else
@@ -970,7 +982,6 @@ void CDataStore::Fsm(void)
             if (CheckBlock())
             {
                 cerr << "CheckBlock ok" << endl;
-                SetFsmEvent(WRITE_OK_FSM_EVENT);
                 SetFsmState(START_WRITE_SERVICE_SECTION_DATA);
             }
             else
@@ -1070,62 +1081,3 @@ void CDataStore::Fsm(void)
 
 
 
-
-
-
-//    case BLOCK_CHECK_START:
-//        // Проверены не все блоки?
-//        if (uiBlockCounter < MAX_BLOCKS_NUMBER)
-//        {
-//            uiLength = ReadBlock(m_puiIntermediateBuff, uiBlockCounter);
-//            // Блок не повреждён?
-//            if (uiLength)
-//            {
-//                // Блок восстановлен после обнаружения ошибки?
-//                if (CHammingCodes::GetErrorCode() != CHammingCodes::NONE_ERROR)
-//                {
-//                    // Обновим восстановленный блок в хранилище.
-//                    uiFsmState = BLOCK_WRITE_START;
-//                }
-//                else
-//                {
-//                    uiFsmState = NEXT_BLOCK;
-//                }
-//            }
-//            else
-//            {
-//                uiFsmState = BLOCK_ERROR;
-//            }
-//        }
-//        else
-//        {
-//            uiFsmState = ALL_BLOCKS_CHECKED;
-//        }
-//        break;
-//
-//    case BLOCK_WRITE_START:
-//        // Поместим данные в хранилище.
-//        // Блок БД принят к записи?
-//        if (WriteBlock(m_puiIntermediateBuff, uiLength, uiBlockCounter))
-//        {
-//            uiFsmState = BLOCK_WRITE_END_WAITING;
-//        }
-//        // При записи блока БД произошла ошибка?
-//        else if (CDataStore::GetFsmEvent() == CDataStore::WRITE_ERROR_FSM_EVENT)
-//        {
-//            uiFsmState = BLOCK_ERROR;
-//        }
-//        break;
-//
-//    case BLOCK_WRITE_END_WAITING:
-//        // Блок записан успешно?
-//        if (CDataStore::GetFsmEvent() == CDataStore::WRITE_OK_FSM_EVENT)
-//        {
-//            uiFsmState = NEXT_BLOCK;
-//        }
-//        // При записи блока БД произошла ошибка?
-//        else if (CDataStore::GetFsmEvent() == CDataStore::WRITE_ERROR_FSM_EVENT)
-//        {
-//            uiFsmState = BLOCK_ERROR;
-//        }
-//        break;

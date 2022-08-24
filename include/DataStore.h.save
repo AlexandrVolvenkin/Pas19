@@ -18,7 +18,7 @@
 #include "StorageDevice.h"
 
 using namespace std;
-ServiceSectionAndBlocksCheck
+
 //-----------------------------------------------------------------------------------------------------
 class CDataStore : public CDfa
 {
@@ -26,36 +26,36 @@ public:
     CDataStore();
     CDataStore(CStorageDevice* pxStorageDevice);
     virtual ~CDataStore();
-    void CreateServiceSection(void);
-    uint8_t WriteTemporaryServiceSection(void);
-    uint8_t WriteServiceSection(void);
-    uint8_t ReadTemporaryServiceSection(void);
-    uint8_t ReadServiceSection(void);
-    uint8_t CheckTemporaryBlock(void);
-    uint8_t CheckBlock(void);
-    uint16_t ReadBlock(uint8_t * , uint8_t );
-//    bool WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
-    uint8_t WriteTemporaryBlock(void);
-    uint8_t WriteBlock(void);
-    uint8_t WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
-    uint8_t TemporaryServiceSectionAndBlocksCheck(void);
+
     uint8_t Check(void);
-    bool CompareCurrentWithStoredCrc(void);
+    void CreateServiceSection(void);
+    uint8_t WriteBlock(uint8_t *puiSource, uint16_t uiLength, uint8_t uiBlock);
+    uint16_t ReadBlock(uint8_t * , uint8_t );
     void CrcOfBlocksCrcCreate(void);
     bool CrcOfBlocksCrcCheck(void);
     void Fsm(void);
-
     uint8_t GetBlockLength(uint8_t uiBlock)
     {
         return m_xServiseSection.xServiseSectionData.
                axBlockPositionData[uiBlock].uiLength;
     };
 
+
+private:
+    uint8_t WriteTemporaryServiceSection(void);
+    uint8_t WriteServiceSection(void);
+    uint8_t ReadTemporaryServiceSection(void);
+    uint8_t ReadServiceSection(void);
+    uint8_t CheckTemporaryBlock(void);
+    uint8_t CheckBlock(void);
+    uint8_t WriteTemporaryBlock(void);
+    uint8_t WriteBlock(void);
     CTimer* GetTimerPointer(void)
     {
         return &m_xTimer;
     };
 
+public:
     enum
     {
         CRC_LENGTH = 2,
@@ -118,8 +118,8 @@ public:
         uint16_t uiFreeSpaceOffset;
         uint16_t uiLength;
         uint16_t uiEncodedLength;
-        uint16_t uiLastWritedBlockNumber;
-        uint16_t uiBlocksNumber;
+//        uint16_t uiLastWritedBlockNumber;
+        uint16_t uiStoredBlocksNumber;
         // Контрольная сумма вычисленная из массива контрольных сумм блоков, не включая служебный.
         // Сохраняется при первой и последующих записях любых блоков через программатор.
         // Ноль или её несовпадение свидетельствует о том, что база данных создана по умоланию,
