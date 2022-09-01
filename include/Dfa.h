@@ -9,6 +9,7 @@
 #define CDFA_H
 
 #include <stdint.h>
+#include "Timer.h"
 
 //-----------------------------------------------------------------------------------------------------
 class CDfaLite
@@ -22,7 +23,7 @@ public:
         return m_uiFsmState;
     };
 
-protected:
+//protected:
     void SetFsmState(uint8_t uiData)
     {
         m_uiFsmState = uiData;
@@ -53,7 +54,7 @@ public:
         return m_uiFsmEvent;
     };
 
-protected:
+//protected:
     void SetSavedFsmState(uint8_t uiData)
     {
         m_uiSavedFsmState = uiData;
@@ -62,9 +63,14 @@ protected:
     {
         m_uiFsmEvent = uiData;
     };
+    CTimer* GetTimerPointer(void)
+    {
+        return &m_xTimer;
+    };
 
     uint8_t m_uiSavedFsmState;
     uint8_t m_uiFsmEvent;
+    CTimer m_xTimer;
 };
 
 

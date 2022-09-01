@@ -31,20 +31,29 @@
 			<Add option="-g" />
 			<Add directory="include" />
 		</Compiler>
+		<Unit filename="Modbus/Modbus.cpp" />
+		<Unit filename="Modbus/ModbusRTU.cpp" />
+		<Unit filename="Modbus/ModbusRTU.h" />
+		<Unit filename="Modbus/errno-base.h" />
+		<Unit filename="Modbus/modbus.h" />
 		<Unit filename="include/Configuration.h" />
 		<Unit filename="include/Crc.h" />
 		<Unit filename="include/DataStore.h" />
 		<Unit filename="include/Dfa.h" />
 		<Unit filename="include/HammingCodes.h" />
+		<Unit filename="include/MainProductionCycle.h" />
 		<Unit filename="include/Platform.h" />
+		<Unit filename="include/StorageDevice.h" />
 		<Unit filename="include/Timer.h" />
 		<Unit filename="src/Crc.cpp" />
 		<Unit filename="src/DataStore.cpp" />
 		<Unit filename="src/Dfa.cpp" />
 		<Unit filename="src/HammingCodes.cpp" />
+		<Unit filename="src/MainProductionCycle.cpp" />
+		<Unit filename="src/Pas19.cpp" />
 		<Unit filename="src/Platform.cpp" />
+		<Unit filename="src/StorageDevice.cpp" />
 		<Unit filename="src/Timer.cpp" />
-		<Unit filename="src/main.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />

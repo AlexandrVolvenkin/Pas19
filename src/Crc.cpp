@@ -41,21 +41,21 @@ const unsigned short usCRCTable[] =
 //-----------------------------------------------------------------------------------------------------
 uint16_t usCrc16(const unsigned char *puiSource, uint16_t uiLength)
 {
-    unsigned char ucTemp;
+    unsigned char uiTemp;
     uint16_t usCrc = 0xFFFF;
 
 //    while (uiLength--)
 //    {
-//        ucTemp = *puiSource++ ^ usCrc;
+//        uiTemp = *puiSource++ ^ usCrc;
 //        usCrc >>= 8;
 //        usCrc  ^= usCRCTable[ucTemp];
 //    }
 
     for (uint8_t i = 0; i < uiLength; i++)
     {
-        ucTemp = *puiSource++ ^ usCrc;
+        uiTemp = *puiSource++ ^ usCrc;
         usCrc >>= 8;
-        usCrc  ^= usCRCTable[ucTemp];
+        usCrc  ^= usCRCTable[uiTemp];
     }
 
     return usCrc;
@@ -66,12 +66,12 @@ uint16_t usCrc16(const unsigned char *puiSource, uint16_t uiLength)
 //unsigned short usCrc16(unsigned char *puiSource, unsigned short uiLength)
 //{
 //    unsigned short usCrc = 0xFFFF;
-//    unsigned char ucCounter;
+//    unsigned char uiCounter;
 //
 //    while (uiLength != 0)
 //    {
 //        usCrc = usCrc ^ (unsigned short)(*puiSource++);
-//        ucCounter = 8;
+//        uiCounter = 8;
 //        while(ucCounter != 0)
 //        {
 //            if (usCrc & 0x0001)
@@ -79,7 +79,7 @@ uint16_t usCrc16(const unsigned char *puiSource, uint16_t uiLength)
 //                usCrc = usCrc >> 1 ^ 0xA001;
 //            }
 //            else usCrc = usCrc >> 1;
-//            ucCounter--;
+//            uiCounter--;
 //        }
 //        uiLength--;
 //    }

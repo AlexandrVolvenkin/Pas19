@@ -44,15 +44,6 @@ void CTimer::Reset(void)
 //-----------------------------------------------------------------------------------------------------
 bool CTimer::IsOverflow(void)
 {
-    //    if ((CPlatform::GetCurrentTime() - m_uiLastSystemTick)  >=
-//            m_uiTime)
-//    {
-//        return true;
-//    }
-//    else
-//    {
-//        return false;
-//    }
     return ((CPlatform::GetCurrentTime() - m_uiLastSystemTick)  >=
             m_uiTime);
 }

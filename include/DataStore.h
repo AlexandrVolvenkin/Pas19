@@ -58,10 +58,10 @@ private:
     uint8_t CheckBlock(void);
     uint8_t TemporaryBlockWritePrepare(void);
     uint8_t BlockWritePrepare(void);
-    CTimer* GetTimerPointer(void)
-    {
-        return &m_xTimer;
-    };
+//    CTimer* GetTimerPointer(void)
+//    {
+//        return &m_xTimer;
+//    };
 
 public:
     enum
@@ -179,7 +179,7 @@ private:
     uint16_t m_auiBlocksCurrentCrc[MAX_BLOCKS_NUMBER];
     // Вспомогательный буфер.
     uint8_t* m_puiIntermediateBuff;
-    CTimer m_xTimer;
+//    CTimer m_xTimer;
 };
 
 //-----------------------------------------------------------------------------------------------------
