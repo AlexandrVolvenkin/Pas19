@@ -21,7 +21,8 @@
 #include "Configuration.h"
 #include "MainProductionCycle.h"
 #include "DataStore.h"
-#include "ModbusRTU.h"
+#include "ModbusRtu.h"
+#include "ModbusTcp.h"
 
 using namespace std;
 
@@ -50,8 +51,8 @@ static uint8_t m_aucRtuDiscreteInputsArray[DISCRETE_INPUTS_ARRAY_LENGTH];
 static uint16_t m_aucRtuHoldingRegistersArray[HOLDING_REGISTERS_ARRAY_LENGTH] = {1, 2, 3, 4, 5, 6, 7};
 static uint16_t m_aucRtuInputRegistersArray[INPUT_REGISTERS_ARRAY_LENGTH];
 //    static uint8_t m_aucRtuDiscreteDataArray[DISCRETE_DATA_ARRAY_LENGTH];
-static uint8_t m_auiReceiveMessageBuff[MODBUS_RTU_MAX_ADU_LENGTH];
-static uint8_t m_auiTransmitMessageBuff[MODBUS_RTU_MAX_ADU_LENGTH];
+//static uint8_t m_auiReceiveMessageBuff[MODBUS_RTU_MAX_ADU_LENGTH];
+//static uint8_t m_auiTransmitMessageBuff[MODBUS_RTU_MAX_ADU_LENGTH];
 
 //-----------------------------------------------------------------------------------------------------
 int main()
@@ -166,14 +167,12 @@ int main()
 //    }
 
     CModbusRtu xModbusRtuUpperLevel;
-    xModbusRtuUpperLevel.SerialPortInit("/dev/ttyO1",
-                                        9600,
-                                        8,
-                                        'N',
-                                        2);
-    xModbusRtuUpperLevel.WorkingArraysInit(m_auiReceiveMessageBuff,
-                                           m_auiTransmitMessageBuff,
-                                           m_aucRtuCoilsArray,
+    xModbusRtuUpperLevel.CommunicationDeviceInit("/dev/ttyO1",
+            9600,
+            8,
+            'N',
+            2);
+    xModbusRtuUpperLevel.WorkingArraysInit(m_aucRtuCoilsArray,
                                            m_aucRtuDiscreteInputsArray,
                                            m_aucRtuHoldingRegistersArray,
                                            m_aucRtuInputRegistersArray,
@@ -185,9 +184,27 @@ int main()
     xModbusRtuUpperLevel.SlaveSet(1);
     xModbusRtuUpperLevel.SetFsmState(CModbusRtu::START_REQUEST);
 
+
+    CModbusTcp xModbusTcpUpperLevel;
+    xModbusTcpUpperLevel.CommunicationDeviceInit("127.0.0.1",
+            502);
+    xModbusTcpUpperLevel.WorkingArraysInit(m_aucRtuCoilsArray,
+                                           m_aucRtuDiscreteInputsArray,
+                                           m_aucRtuHoldingRegistersArray,
+                                           m_aucRtuInputRegistersArray,
+                                           COILS_WORK_ARRAY_LENGTH,
+                                           DISCRETE_INPUTS_ARRAY_LENGTH,
+                                           HOLDING_REGISTERS_ARRAY_LENGTH,
+                                           INPUT_REGISTERS_ARRAY_LENGTH
+                                          );
+    xModbusTcpUpperLevel.SlaveSet(1);
+//    xModbusTcpUpperLevel.SetFsmState(CModbusTcp::START_REQUEST);
+    xModbusTcpUpperLevel.SetFsmState(CModbusTcp::REQUEST_ENABLE);
+
     while (1)
     {
         xModbusRtuUpperLevel.Fsm();
+        xModbusTcpUpperLevel.Fsm();
         usleep(1000);
     }
 
@@ -263,4 +280,19 @@ int main()
 
 
 
+//        cout << "modbus_reply req" << endl;
+//        unsigned char *pucSourceTemp;
+//        pucSourceTemp = (unsigned char*)puiResponse;
+//        for(int i=0; i<32; )
+//        {
+//            for(int j=0; j<8; j++)
+//            {
+//                cout << hex << uppercase << setw(2) << setfill('0') << (unsigned int)pucSourceTemp[i + j] << " ";
+//            }
+//            cout << endl;
+//            i += 8;
+//        }
+//            cout << "uiLength" << " " << (int)uiLength << endl;
+
 //sudo start-stop-daemon -Kvx /home/debian/Pas19
+//sudo chown -R debian /home/debian

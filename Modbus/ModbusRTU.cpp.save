@@ -27,7 +27,7 @@ CModbusRtu::~CModbusRtu()
 }
 
 //-----------------------------------------------------------------------------------------------------
-void CModbusRtu::SerialPortInit(const char* pccPortName,
+void CModbusRtu::CommunicationDeviceInit(const char* pccPortName,
                                 uint32_t uiBaudRate,
                                 uint8_t uiDataBits,
                                 char cParity,
@@ -67,11 +67,11 @@ void CModbusRtu::WorkingArraysInit(uint8_t *puiRxBuffer,
     m_uiInputRegistersNumber = uiInputRegistersNumber;
 }
 
-//-----------------------------------------------------------------------------------------------------
-void CModbusRtu::Reset(void)
-{
-    m_pxSerialPort -> Reset();
-}
+////-----------------------------------------------------------------------------------------------------
+//void CModbusRtu::Reset(void)
+//{
+//    m_pxSerialPort -> Reset();
+//}
 
 //-----------------------------------------------------------------------------------------------------
 void CModbusRtu::ReceiveEnable(void)
@@ -303,52 +303,18 @@ void CModbusRtu::Fsm(void)
         break;
 
     case WAITING_MESSAGE_CONFIRMATION:
-//        if (m_pxSerialPort -> IsDataAvailable())
-//        {
-//            int16_t iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_RTU_MAX_ADU_LENGTH - GetMessageLength()));
-//
-//            if (iBytesNumber > 0)
-//            {
-//                SetMessageLength(GetMessageLength() + iBytesNumber);
-//                GetTimerPointer() -> Set(m_uiGuardTimeout);
-//                SetFsmState(RECEIVE_MESSAGE_CONFIRMATION);
-//            }
-//            else if (iBytesNumber == -1)
-//            {
-//                SetFsmState(STOP_REQUEST);
-//            }
-//        }
-
         iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_RTU_MAX_ADU_LENGTH - GetMessageLength()));
 
         if (iBytesNumber > 0)
         {
             SetMessageLength(GetMessageLength() + iBytesNumber);
             GetTimerPointer() -> Set(m_uiGuardTimeout);
-            ClearBytesIsAvailable();
             SetFsmState(RECEIVE_MESSAGE_CONFIRMATION);
         }
         else if (iBytesNumber == -1)
         {
             SetFsmState(STOP_REQUEST);
         }
-
-        //        if (BytesIsAvailable())
-//        {
-//            int16_t iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_RTU_MAX_ADU_LENGTH - GetMessageLength()));
-//
-//            if (iBytesNumber > 0)
-//            {
-//                SetMessageLength(GetMessageLength() + iBytesNumber);
-//                GetTimerPointer() -> Set(m_uiGuardTimeout);
-//                ClearBytesIsAvailable();
-//                SetFsmState(RECEIVE_MESSAGE_CONFIRMATION);
-//            }
-//            else if (iBytesNumber == -1)
-//            {
-//                SetFsmState(STOP_REQUEST);
-//            }
-//        }
 
         // Закончилось время ожидания ответа(500 милисекунд)?
         if (GetTimerPointer() -> IsOverflow())
@@ -359,49 +325,17 @@ void CModbusRtu::Fsm(void)
         break;
 
     case RECEIVE_MESSAGE_CONFIRMATION:
-//        if (m_pxSerialPort -> IsDataAvailable())
-//        {
-//            int16_t iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_RTU_MAX_ADU_LENGTH - GetMessageLength()));
-//
-//            if (iBytesNumber > 0)
-//            {
-//                SetMessageLength(GetMessageLength() + iBytesNumber);
-//                GetTimerPointer() -> Set(m_uiGuardTimeout);
-//            }
-//            else if (iBytesNumber == -1)
-//            {
-//                SetFsmState(STOP_REQUEST);
-//            }
-//        }
-
         iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_RTU_MAX_ADU_LENGTH - GetMessageLength()));
 
         if (iBytesNumber > 0)
         {
             SetMessageLength(GetMessageLength() + iBytesNumber);
             GetTimerPointer() -> Set(m_uiGuardTimeout);
-            ClearBytesIsAvailable();
         }
         else if (iBytesNumber == -1)
         {
             SetFsmState(STOP_REQUEST);
         }
-
-//        if (BytesIsAvailable())
-//        {
-//            int16_t iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_RTU_MAX_ADU_LENGTH - GetMessageLength()));
-//
-//            if (iBytesNumber > 0)
-//            {
-//                SetMessageLength(GetMessageLength() + iBytesNumber);
-//                GetTimerPointer() -> Set(m_uiGuardTimeout);
-//                ClearBytesIsAvailable();
-//            }
-//            else if (iBytesNumber == -1)
-//            {
-//                SetFsmState(STOP_REQUEST);
-//            }
-//        }
 
         // Принят пакет(закончилось время ожидания следующего бода(3.5 бод))?
         if (GetTimerPointer() -> IsOverflow())
@@ -440,7 +374,6 @@ void CModbusRtu::Fsm(void)
         if (GetTimerPointer() -> IsOverflow())
         {
             GetTimerPointer() -> Set(m_uiConfirmationTimeout);
-            ClearMessageIsSended();
             TransmitEnable();
             SendMessage(m_puiTxBuffer, GetMessageLength());
             SetFsmState(END_WAITING_FRAME_TRANSMIT_REQUEST);
@@ -465,7 +398,6 @@ void CModbusRtu::Fsm(void)
         break;
 
     case STOP_REQUEST:
-        StopTimer();
         ReceiveDisable();
         TransmitEnable();
         SetFsmState(IDDLE);

@@ -174,6 +174,8 @@ public:
         IDDLE  = 0,
         START,
 
+        REQUEST_ENABLE,
+        WAITING_ACCEPT,
         START_REQUEST,
         WAITING_MESSAGE_REQUEST,
         RECEIVE_MESSAGE_REQUEST,
@@ -181,10 +183,13 @@ public:
         FRAME_TRANSMIT_CONFIRMATION,
         WAITING_FRAME_TRANSMIT_CONFIRMATION,
         END_WAITING_FRAME_TRANSMIT_CONFIRMATION,
-//        STOP_REQUEST,
+        STOP_REQUEST,
+        REQUEST_ERROR,
 
 //-----------------------------------------------------------------------------------------------------
 // ModbusMaster
+        CONFIRMATION_ENABLE,
+        WAITING_CONNECT,
         START_CONFIRMATION,
         WAITING_MESSAGE_CONFIRMATION,
         RECEIVE_MESSAGE_CONFIRMATION,
@@ -192,7 +197,8 @@ public:
         FRAME_TRANSMIT_REQUEST,
         WAITING_FRAME_TRANSMIT_REQUEST,
         END_WAITING_FRAME_TRANSMIT_REQUEST,
-        STOP_REQUEST,
+        STOP_CONFIRMATION,
+        CONFIRMATION_ERROR,
 
         RESTART,
     } FsmState;
@@ -205,6 +211,7 @@ public:
     CModbus();
     virtual ~CModbus();
 
+    static const char *ModbusStringError(int errnum);
     void SlaveSet(uint8_t );
 
     uint16_t ReadCoils(uint8_t * , uint8_t * , uint16_t );
@@ -227,18 +234,18 @@ protected:
 private:
 
     uint16_t ByteToBitPack(uint16_t ,
-                          uint16_t ,
-                          uint8_t *,
-                          uint8_t *,
-                          uint16_t );
+                           uint16_t ,
+                           uint8_t *,
+                           uint8_t *,
+                           uint16_t );
     virtual bool IsDataWrited(void) = 0;
     int8_t MessengerIsReady(void);
     virtual uint16_t Tail(uint8_t * , uint16_t ) = 0;
     virtual uint16_t RequestBasis(uint8_t uiSlave,
-                                 uint8_t uiFunctionCode,
-                                 uint16_t uiAddress,
-                                 uint16_t uiBitNumber,
-                                 uint8_t *puiRequest) = 0;
+                                  uint8_t uiFunctionCode,
+                                  uint16_t uiAddress,
+                                  uint16_t uiBitNumber,
+                                  uint8_t *puiRequest) = 0;
     virtual uint16_t ResponseBasis(uint8_t , uint8_t , uint8_t * ) = 0;
     uint16_t ResponseException(uint8_t , uint8_t , uint8_t , uint8_t * );
     uint16_t SendMessage(uint8_t * , uint16_t );
@@ -264,8 +271,8 @@ public:
     uint16_t ReadDiscreteInputsReceive(uint8_t *puiMessage, uint16_t uiLength);
 
 
-protected:
 private:
+protected:
 
 //    static uint8_t CheckConfirmation(uint8_t *puiResponse, uint16_t uiLength);
     uint16_t AnswerProcessing(uint8_t *puiResponse, uint16_t uiFrameLength);
@@ -309,6 +316,7 @@ private:
     uint16_t m_uiInputRegistersNumber;
 
     friend class CModbusRtu;
+    friend class CModbusTcp;
 };
 
 //-----------------------------------------------------------------------------------------------------

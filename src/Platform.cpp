@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "Platform.h"
+#include "Modbus.h"
 
 using namespace std;
 
@@ -213,8 +214,8 @@ void CSerialPort::SetBaudRate(uint32_t uiBaudRate)
     if ((cfsetispeed(&m_xTios, speed) < 0) ||
             (cfsetospeed(&m_xTios, speed) < 0))
     {
-//        close(m_iPortDescriptor);
-//        m_iPortDescriptor = -1;
+//        close(m_iDeviceDescriptor);
+//        m_iDeviceDescriptor = -1;
 //        return -1;
     }
 }
@@ -311,7 +312,7 @@ void CSerialPort::SetStopBit(uint8_t uiStopBit)
 }
 
 //-----------------------------------------------------------------------------------------------------
-uint8_t CSerialPort::Open(void)
+int8_t CSerialPort::Open(void)
 {
     /* The O_NOCTTY flag tells UNIX that this program doesn't want
        to be the "controlling terminal" for that port. If you
@@ -320,40 +321,41 @@ uint8_t CSerialPort::Open(void)
 
        Timeouts are ignored in canonical input mode or when the
        NDELAY option is set on the file via open or fcntl */
-    m_iPortDescriptor = open(m_pccPortName, O_RDWR | O_NOCTTY | O_NDELAY | O_EXCL);
-    if (m_iPortDescriptor == -1)
+    m_iDeviceDescriptor = open(m_pccPortName, O_RDWR | O_NOCTTY | O_NDELAY | O_EXCL);
+    if (m_iDeviceDescriptor == -1)
     {
         fprintf(stderr, "ERROR Can't open the device %s (%s)\n",
                 m_pccPortName, strerror(errno));
         return -1;
     }
 
-    if (tcsetattr(m_iPortDescriptor, TCSANOW, &m_xTios) < 0)
+    if (tcsetattr(m_iDeviceDescriptor, TCSANOW, &m_xTios) < 0)
     {
-        close(m_iPortDescriptor);
-        m_iPortDescriptor = -1;
+        close(m_iDeviceDescriptor);
+        m_iDeviceDescriptor = -1;
         return -1;
     }
 
-    if (ioctl(m_iPortDescriptor, TIOCSRS485, &m_xRs485Conf) < 0)
+    if (ioctl(m_iDeviceDescriptor, TIOCSRS485, &m_xRs485Conf) < 0)
     {
         printf("Error! set rs485 ioctl: %d %s\n", errno, strerror(errno));
         return -1;
     }
 
-    int flags = fcntl(m_iPortDescriptor, F_GETFL, 0);
-    fcntl(m_iPortDescriptor, F_SETFL, flags | O_NONBLOCK);
+    // Сделаем не блокирующим.
+    int flags = fcntl(m_iDeviceDescriptor, F_GETFL, 0);
+    fcntl(m_iDeviceDescriptor, F_SETFL, flags | O_NONBLOCK);
 
 //    pto = NULL;
 //    FD_ZERO(&readfds);
 //    FD_ZERO(&writefds);
-//    FD_SET(m_iPortDescriptor, &readfds);
+//    FD_SET(m_iDeviceDescriptor, &readfds);
 }
 
 //-----------------------------------------------------------------------------------------------------
-uint8_t CSerialPort::Close(void)
+int8_t CSerialPort::Close(void)
 {
-    close(m_iPortDescriptor);
+    close(m_iDeviceDescriptor);
 }
 
 ////-----------------------------------------------------------------------------------------------------
@@ -366,7 +368,7 @@ uint8_t CSerialPort::Close(void)
 //bool CSerialPort::IsDataAvailable(void)
 //{
 //        int ready;
-//        ready = select((m_iPortDescriptor + 1), &readfds, &writefds, NULL, pto);
+//        ready = select((m_iDeviceDescriptor + 1), &readfds, &writefds, NULL, pto);
 //
 //        if (ready == -1)
 //        {
@@ -381,14 +383,414 @@ uint8_t CSerialPort::Close(void)
 //-----------------------------------------------------------------------------------------------------
 int16_t CSerialPort::Read(uint8_t *puiDestination, uint16_t uiLength)
 {
-    return read(m_iPortDescriptor, puiDestination, uiLength);
+    return read(m_iDeviceDescriptor, puiDestination, uiLength);
 }
 
 //-----------------------------------------------------------------------------------------------------
 int16_t CSerialPort::Write(uint8_t *puiSource, uint16_t uiLength)
 {
     m_bDataIsWrited = true;
-    return write(m_iPortDescriptor, puiSource, uiLength);
+    return write(m_iDeviceDescriptor, puiSource, uiLength);
+}
+
+//-----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+//-----------------------------------------------------------------------------------------------------
+CTcpCommunicationDevice::CTcpCommunicationDevice()
+{
+
+}
+
+//-----------------------------------------------------------------------------------------------------
+CTcpCommunicationDevice::~CTcpCommunicationDevice()
+{
+
+}
+
+//-----------------------------------------------------------------------------------------------------
+void CTcpCommunicationDevice::Init(void)
+{
+#if defined(OS_BSD)
+    /* MSG_NOSIGNAL is unsupported on *BSD so we install an ignore
+       handler for SIGPIPE. */
+    struct sigaction sa;
+
+    sa.sa_handler = SIG_IGN;
+    if (sigaction(SIGPIPE, &sa, NULL) < 0)
+    {
+        /* The debug flag can't be set here... */
+        fprintf(stderr, "Coud not install SIGPIPE handler.\n");
+        return NULL;
+    }
+#endif
+
+    memset(&m_Address, 0, sizeof(m_Address));
+    m_Address.sin_family = AF_INET;
+}
+
+//-----------------------------------------------------------------------------------------------------
+void CTcpCommunicationDevice::SetIpAddress(const char* pccIpAddress)
+{
+    m_uiIpAddress = inet_addr(pccIpAddress);
+}
+
+//-----------------------------------------------------------------------------------------------------
+const char* CTcpCommunicationDevice::GetIpAddress(void)
+{
+
+}
+
+//-----------------------------------------------------------------------------------------------------
+void CTcpCommunicationDevice::SetPort(uint16_t uiPort)
+{
+    m_uiPort = uiPort;
+}
+
+//-----------------------------------------------------------------------------------------------------
+int8_t CTcpCommunicationDevice::Open(void)
+{
+
+//    int sock, listener;
+//    struct sockaddr_in addr;
+//    char buf[1024];
+//    int bytes_read;
+//
+//    listener = socket(AF_INET, SOCK_STREAM, 0);
+//    if(listener < 0)
+//    {
+//        perror("socket");
+//        exit(1);
+//    }
+//
+//    int yes;
+//    yes = 1;
+//    if (setsockopt(listener, SOL_SOCKET, SO_REUSEADDR,
+//                   (char *) &yes, sizeof(yes)) == -1)
+//    {
+//        cout << "CTcpCommunicationDevice::Open error 8" << endl;
+//        close(listener);
+//        return -1;
+//    }
+//
+//    addr.sin_family = AF_INET;
+//    addr.sin_port = htons(5);
+//    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+//    if(bind(listener, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+//    {
+//        perror("bind");
+//        exit(2);
+//    }
+//
+//        cout << "bind ok" << endl;
+//    return 0;
+
+
+    /* Establishes a modbus TCP connection with a Modbus server. */
+    int rc;
+
+    m_iDeviceDescriptor = socket(PF_INET, SOCK_STREAM, 0);
+    if (m_iDeviceDescriptor == -1)
+    {
+        cout << "CTcpCommunicationDevice::Open error" << endl;
+        return -1;
+    }
+
+    cout << "CTcpCommunicationDevice::Open ok" << endl;
+
+    int option;
+
+    /* Set the TCP no delay flag */
+    /* SOL_TCP = IPPROTO_TCP */
+    option = 1;
+    rc = setsockopt(m_iDeviceDescriptor, IPPROTO_TCP, TCP_NODELAY,
+                    (const void *)&option, sizeof(int));
+    if (rc == -1)
+    {
+        cout << "CTcpCommunicationDevice::Open error 2" << endl;
+        return -1;
+    }
+
+    rc = connect(m_iDeviceDescriptor, (struct sockaddr *)&m_Address,
+                 sizeof(struct sockaddr_in));
+    if (rc == -1)
+    {
+        fprintf(stderr, "Connection failed tcp: %s\n",
+                CModbus::ModbusStringError(errno));
+        cout << "CTcpCommunicationDevice::Open error 3" << endl;
+        close(m_iDeviceDescriptor);
+//        return -1;
+    }
+
+
+
+    int new_socket;
+    int yes;
+    struct sockaddr_in addr;
+
+    new_socket = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (new_socket == -1)
+    {
+        cout << "CTcpCommunicationDevice::Open error 4" << endl;
+        return -1;
+    }
+
+    yes = 1;
+    if (setsockopt(new_socket, SOL_SOCKET, SO_REUSEADDR,
+                   (char *) &yes, sizeof(yes)) == -1)
+    {
+        cout << "CTcpCommunicationDevice::Open error 8" << endl;
+        close(new_socket);
+        return -1;
+    }
+
+
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    /* If the modbus port is < to 1024, we need the setuid root. */
+//    addr.sin_port = m_Address.sin_port;
+    addr.sin_port = htons(502);
+    addr.sin_addr.s_addr = INADDR_ANY;//htonl(INADDR_ANY);//
+
+    cout << "CStorageDeviceFileSystem::Write pccIpAddress" << " " << addr.sin_addr.s_addr << endl;
+    cout << "CStorageDeviceFileSystem::Write sin_port" << " " << (int)addr.sin_port << endl;
+    cout << "CStorageDeviceFileSystem::Write sin_port" << " " << (int)htons(502) << endl;
+
+    if (bind(new_socket, (struct sockaddr *)&addr, sizeof(addr)) == -1)
+    {
+        fprintf(stderr, "Connection failed tcp bind: %s\n",
+                CModbus::ModbusStringError(errno));
+        cout << "CTcpCommunicationDevice::Open error 5" << endl;
+        close(new_socket);
+        return -1;
+    }
+
+    int nb_connection = 1;
+    if (listen(new_socket, nb_connection) == -1)
+    {
+        cout << "CTcpCommunicationDevice::Open error 6" << endl;
+        close(new_socket);
+        return -1;
+    }
+
+
+
+//    struct sockaddr_in addr;
+    socklen_t addrlen;
+
+    addrlen = sizeof(addr);
+    m_iDeviceDescriptor = accept(new_socket, (struct sockaddr *)&addr, &addrlen);
+    if (m_iDeviceDescriptor == -1)
+    {
+        cout << "CTcpCommunicationDevice::Open error 7" << endl;
+        close(new_socket);
+        return -1;
+    }
+
+//    if (ctx->debug)
+//    {
+    printf("The client connection from %s is accepted\n",
+           inet_ntoa(m_Address.sin_addr));
+//    }
+
+
+
+    int flags = fcntl(m_iDeviceDescriptor, F_GETFL, 0);
+    fcntl(m_iDeviceDescriptor, F_SETFL, flags | O_NONBLOCK);
+
+
+    return 0;
+}
+
+//-----------------------------------------------------------------------------------------------------
+int8_t CTcpCommunicationDevice::Listen(void)
+{
+    int yes;
+    struct sockaddr_in addr;
+
+    m_iDeviceDescriptor = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (m_iDeviceDescriptor == -1)
+    {
+        return -1;
+    }
+
+    yes = 1;
+    if (setsockopt(m_iDeviceDescriptor, SOL_SOCKET, SO_REUSEADDR,
+                   (char *) &yes, sizeof(yes)) == -1)
+    {
+        close(m_iDeviceDescriptor);
+        return -1;
+    }
+
+
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    /* If the modbus port is < to 1024, we need the setuid root. */
+    addr.sin_port = htons(m_uiPort);
+    addr.sin_addr.s_addr = INADDR_ANY;//htonl(INADDR_ANY);//
+
+    if (bind(m_iDeviceDescriptor, (struct sockaddr *)&addr, sizeof(addr)) == -1)
+    {
+        fprintf(stderr, "Connection failed tcp bind: %s\n",
+                CModbus::ModbusStringError(errno));
+        close(m_iDeviceDescriptor);
+        return -1;
+    }
+
+    int nb_connection = 1;
+    if (listen(m_iDeviceDescriptor, nb_connection) == -1)
+    {
+        close(m_iDeviceDescriptor);
+        return -1;
+    }
+
+//    // Сделаем не блокирующим.
+//    int flags = fcntl(m_iDeviceDescriptor, F_GETFL, 0);
+//    fcntl(m_iDeviceDescriptor, F_SETFL, flags | O_NONBLOCK);
+
+    return 0;
+}
+
+//-----------------------------------------------------------------------------------------------------
+int8_t CTcpCommunicationDevice::Accept(void)
+{
+//    // Сделаем не блокирующим.
+//    int flags = fcntl(m_iDeviceDescriptor, F_GETFL, 0);
+//    fcntl(m_iDeviceDescriptor, F_SETFL, flags | O_NONBLOCK);
+
+    fd_set readfds, writefds;
+    FD_ZERO(&readfds);
+//    FD_ZERO(&writefds);
+    FD_SET(m_iDeviceDescriptor, &readfds);
+//    FD_SET(m_iDeviceDescriptor, &writefds);
+    FD_SET(STDIN_FILENO, &readfds);
+//    FD_SET(STDIN_FILENO, &writefds);
+
+    int ready = select(m_iDeviceDescriptor + 1, &readfds, NULL, NULL, NULL);
+
+    if (ready == -1)
+    {
+        return 0;
+    }
+    else if (FD_ISSET(m_iDeviceDescriptor, &readfds))
+    {
+        struct sockaddr_in addr;
+        socklen_t addrlen;
+
+        addrlen = sizeof(addr);
+        m_iDeviceDescriptorAccept = accept(m_iDeviceDescriptor, (struct sockaddr *)&addr, &addrlen);
+        if (m_iDeviceDescriptorAccept == -1)
+        {
+            fprintf(stderr, "Connection failed tcp bind: %s\n",
+                    CModbus::ModbusStringError(errno));
+            close(m_iDeviceDescriptor);
+            return 0;
+        }
+
+        printf("The client connection from %s is accepted\n",
+               inet_ntoa(addr.sin_addr));
+
+        // Сделаем не блокирующим.
+        int flags = fcntl(m_iDeviceDescriptorAccept, F_GETFL, 0);
+        fcntl(m_iDeviceDescriptorAccept, F_SETFL, flags | O_NONBLOCK);
+
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+//-----------------------------------------------------------------------------------------------------
+int8_t CTcpCommunicationDevice::Connect(void)
+{
+    /* Establishes a modbus TCP connection with a Modbus server. */
+    int rc;
+
+    m_iDeviceDescriptorAccept = socket(PF_INET, SOCK_STREAM, 0);
+    if (m_iDeviceDescriptorAccept == -1)
+    {
+        return -1;
+    }
+
+    int option;
+
+    /* Set the TCP no delay flag */
+    /* SOL_TCP = IPPROTO_TCP */
+    option = 1;
+    rc = setsockopt(m_iDeviceDescriptorAccept, IPPROTO_TCP, TCP_NODELAY,
+                    (const void *)&option, sizeof(int));
+    if (rc == -1)
+    {
+        return -1;
+    }
+
+    rc = connect(m_iDeviceDescriptorAccept, (struct sockaddr *)&m_Address,
+                 sizeof(struct sockaddr_in));
+    if (rc == -1)
+    {
+        fprintf(stderr, "Connection failed tcp: %s\n",
+                CModbus::ModbusStringError(errno));
+        cout << "Connect connect error" << endl;
+        close(m_iDeviceDescriptorAccept);
+        return -1;
+    }
+
+    // Сделаем не блокирующим.
+    int flags = fcntl(m_iDeviceDescriptorAccept, F_GETFL, 0);
+    fcntl(m_iDeviceDescriptorAccept, F_SETFL, flags | O_NONBLOCK);
+
+    return 0;
+}
+
+////-----------------------------------------------------------------------------------------------------
+//bool CTcpCommunicationDevice::IsDataAvailable(void)
+//{
+//    int ready;
+//    ready = select((m_iDeviceDescriptor + 1), &readfds, &writefds, NULL, pto);
+//
+//    if (ready == -1)
+//    {
+//        return false;
+//    }
+//    else
+//    {
+//        return true;
+//    }
+//}
+
+//-----------------------------------------------------------------------------------------------------
+int8_t CTcpCommunicationDevice::Close(void)
+{
+    close(m_iDeviceDescriptor);
+    close(m_iDeviceDescriptorAccept);
+}
+
+//-----------------------------------------------------------------------------------------------------
+int16_t CTcpCommunicationDevice::Read(uint8_t *puiDestination, uint16_t uiLength)
+{
+    return read(m_iDeviceDescriptorAccept, puiDestination, uiLength);
+}
+
+//-----------------------------------------------------------------------------------------------------
+int16_t CTcpCommunicationDevice::Write(uint8_t *puiSource, uint16_t uiLength)
+{
+    m_bDataIsWrited = true;
+    return write(m_iDeviceDescriptorAccept, puiSource, uiLength);
 }
 
 //-----------------------------------------------------------------------------------------------------

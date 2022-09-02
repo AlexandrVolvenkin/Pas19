@@ -1,3 +1,4 @@
+
 //-----------------------------------------------------------------------------------------------------
 //  Sourse      : FileName.cpp
 //  Created     : 01.06.2022
@@ -9,21 +10,21 @@
 #include <Crc.h>
 #include <Dfa.h>
 #include "Platform.h"
-#include <ModbusRtu.h>
+#include <ModbusTcp.h>
 
 using namespace std;
 
 //-----------------------------------------------------------------------------------------------------
-CModbusRtu::CModbusRtu()
+CModbusTcp::CModbusTcp()
 {
-    m_pxCommunicationDevice = new CSerialPort();
-    m_puiRxBuffer = new uint8_t[MODBUS_RTU_MAX_ADU_LENGTH];
-    m_puiTxBuffer = new uint8_t[MODBUS_RTU_MAX_ADU_LENGTH];
+    m_pxCommunicationDevice = new CTcpCommunicationDevice();
+    m_puiRxBuffer = new uint8_t[MODBUS_TCP_MAX_ADU_LENGTH];
+    m_puiTxBuffer = new uint8_t[MODBUS_TCP_MAX_ADU_LENGTH];
     SetFsmState(IDDLE);
 }
 
 //-----------------------------------------------------------------------------------------------------
-CModbusRtu::~CModbusRtu()
+CModbusTcp::~CModbusTcp()
 {
     delete[] m_puiTxBuffer;
     delete[] m_puiRxBuffer;
@@ -31,24 +32,38 @@ CModbusRtu::~CModbusRtu()
 }
 
 //-----------------------------------------------------------------------------------------------------
-void CModbusRtu::CommunicationDeviceInit(const char* pccPortName,
-                                uint32_t uiBaudRate,
-                                uint8_t uiDataBits,
-                                char cParity,
-                                uint8_t uiStopBit)
+void CModbusTcp::CommunicationDeviceInit(const char* pccIpAddress,
+        uint16_t uiPort)
 {
     m_pxCommunicationDevice -> Init();
-    m_pxCommunicationDevice -> SetPortName(pccPortName);
-    m_pxCommunicationDevice -> SetBaudRate(uiBaudRate);
-    m_pxCommunicationDevice -> SetDataBits(uiDataBits);
-    m_pxCommunicationDevice -> SetParity(cParity);
-    m_pxCommunicationDevice -> SetStopBit(uiStopBit);
+    m_pxCommunicationDevice -> SetIpAddress(pccIpAddress);
+    m_pxCommunicationDevice -> SetPort(uiPort);
 
-    m_uiGuardTimeout = ((((1000000UL / uiBaudRate) * 8UL * 4UL) / 1000UL) + 1);
+    m_uiGuardTimeout = 10;
 }
 
 //-----------------------------------------------------------------------------------------------------
-void CModbusRtu::WorkingArraysInit(uint8_t *puiRxBuffer,
+void CModbusTcp::WorkingArraysInit(uint8_t *puiCoils,
+                                   uint8_t *puiDiscreteInputs,
+                                   uint16_t *pui16HoldingRegisters,
+                                   uint16_t *pui16InputRegisters,
+                                   uint16_t uiCoilsNumber,
+                                   uint16_t uiDiscreteInputsNumber,
+                                   uint16_t uiHoldingRegistersNumber,
+                                   uint16_t uiInputRegistersNumber)
+{
+    m_puiCoils = puiCoils;
+    m_puiDiscreteInputs = puiDiscreteInputs;
+    m_pui16HoldingRegisters = pui16HoldingRegisters;
+    m_pui16InputRegisters = pui16InputRegisters;
+    m_uiCoilsNumber = uiCoilsNumber;
+    m_uiDiscreteInputsNumber = uiDiscreteInputsNumber;
+    m_uiHoldingRegistersNumber = uiHoldingRegistersNumber;
+    m_uiInputRegistersNumber = uiInputRegistersNumber;
+}
+
+//-----------------------------------------------------------------------------------------------------
+void CModbusTcp::WorkingArraysInit(uint8_t *puiRxBuffer,
                                    uint8_t *puiTxBuffer,
                                    uint8_t *puiCoils,
                                    uint8_t *puiDiscreteInputs,
@@ -71,133 +86,134 @@ void CModbusRtu::WorkingArraysInit(uint8_t *puiRxBuffer,
     m_uiInputRegistersNumber = uiInputRegistersNumber;
 }
 
-//-----------------------------------------------------------------------------------------------------
-void CModbusRtu::WorkingArraysInit(uint8_t *puiCoils,
-                                   uint8_t *puiDiscreteInputs,
-                                   uint16_t *pui16HoldingRegisters,
-                                   uint16_t *pui16InputRegisters,
-                                   uint16_t uiCoilsNumber,
-                                   uint16_t uiDiscreteInputsNumber,
-                                   uint16_t uiHoldingRegistersNumber,
-                                   uint16_t uiInputRegistersNumber)
-{
-    m_puiCoils = puiCoils;
-    m_puiDiscreteInputs = puiDiscreteInputs;
-    m_pui16HoldingRegisters = pui16HoldingRegisters;
-    m_pui16InputRegisters = pui16InputRegisters;
-    m_uiCoilsNumber = uiCoilsNumber;
-    m_uiDiscreteInputsNumber = uiDiscreteInputsNumber;
-    m_uiHoldingRegistersNumber = uiHoldingRegistersNumber;
-    m_uiInputRegistersNumber = uiInputRegistersNumber;
-}
-
 ////-----------------------------------------------------------------------------------------------------
-//void CModbusRtu::Reset(void)
+//void CModbusTcp::Reset(void)
 //{
 //    m_pxCommunicationDevice -> Reset();
 //}
 
 //-----------------------------------------------------------------------------------------------------
-void CModbusRtu::ReceiveEnable(void)
+void CModbusTcp::ReceiveEnable(void)
 {
-    m_pxCommunicationDevice -> Open();
+//    m_pxCommunicationDevice -> Open();
 }
 
 //-----------------------------------------------------------------------------------------------------
-void CModbusRtu::ReceiveDisable(void)
+void CModbusTcp::ReceiveDisable(void)
 {
-    m_pxCommunicationDevice -> Close();
+//    m_pxCommunicationDevice -> Close();
 }
 
 //-----------------------------------------------------------------------------------------------------
-void CModbusRtu::TransmitEnable(void)
+void CModbusTcp::TransmitEnable(void)
 {
-    m_pxCommunicationDevice -> Open();
+//    m_pxCommunicationDevice -> Open();
 }
 
 //-----------------------------------------------------------------------------------------------------
-void CModbusRtu::TransmitDisable(void)
+void CModbusTcp::TransmitDisable(void)
 {
-    m_pxCommunicationDevice -> Close();
+//    m_pxCommunicationDevice -> Close();
 }
 
 //-----------------------------------------------------------------------------------------------------
-uint16_t CModbusRtu::Tail(uint8_t *puiMessage, uint16_t uiLength)
+uint16_t CModbusTcp::Tail(uint8_t *puiMessage, uint16_t uiLength)
 {
-    uint16_t uiCrc = usCrc16(puiMessage, uiLength);
-    puiMessage[uiLength++] = uiCrc & 0x00FF;
-    puiMessage[uiLength++] = uiCrc >> 8;
-
     return uiLength;
 }
 
 //-----------------------------------------------------------------------------------------------------
-/* Builds a RTU request header */
-uint16_t CModbusRtu::RequestBasis(uint8_t uiSlave,
+/* Builds a TCP request header */
+uint16_t CModbusTcp::RequestBasis(uint8_t uiSlave,
                                   uint8_t uiFunctionCode,
                                   uint16_t uiAddress,
                                   uint16_t uiBitNumber,
                                   uint8_t *puiRequest)
 {
-    puiRequest[0] = uiSlave;
-    puiRequest[1] = uiFunctionCode;
-    puiRequest[2] = (static_cast<uint8_t>(uiAddress >> 8));
-    puiRequest[3] = (static_cast<uint8_t>(uiAddress & 0x00ff));
-    puiRequest[4] = (static_cast<uint8_t>(uiBitNumber >> 8));
-    puiRequest[5] = (static_cast<uint8_t>(uiBitNumber & 0x00ff));
+    /* Extract from MODBUS Messaging on TCP/IP Implementation Guide V1.0b
+       (page 23/46):
+       The transaction identifier is used to associate the future response
+       with the request. So, at a time, on a TCP connection, this identifier
+       must be unique. */
 
-    return _MODBUS_RTU_PRESET_REQ_LENGTH;
+    /* Transaction ID */
+    if (m_uiRequestTransactionId < UINT16_MAX)
+    {
+        m_uiRequestTransactionId++;
+    }
+    else
+    {
+        m_uiRequestTransactionId = 0;
+    }
+    puiRequest[0] = (m_uiRequestTransactionId >> 8);
+    puiRequest[1] = (m_uiRequestTransactionId & 0x00ff);
+
+    /* Protocol Modbus */
+    puiRequest[2] = 0;
+    puiRequest[3] = 0;
+
+    /* Length will be defined later by set_puiRequest_length_tcp at offsets 4
+       and 5 */
+
+    puiRequest[6] = uiSlave;
+    puiRequest[7] = uiFunctionCode;
+    puiRequest[8] = (static_cast<uint8_t>(uiAddress >> 8));
+    puiRequest[9] = (static_cast<uint8_t>(uiAddress & 0x00ff));
+    puiRequest[10] = (static_cast<uint8_t>(uiBitNumber >> 8));
+    puiRequest[11] = (static_cast<uint8_t>(uiBitNumber & 0x00ff));
+
+    return _MODBUS_TCP_PRESET_REQ_LENGTH;
 }
 
 //-----------------------------------------------------------------------------------------------------
 /* Builds a RTU response header */
-uint16_t CModbusRtu::ResponseBasis(uint8_t uiSlave, uint8_t uiFunctionCode, uint8_t *puiResponse)
+uint16_t CModbusTcp::ResponseBasis(uint8_t uiSlave, uint8_t uiFunctionCode, uint8_t *puiResponse)
 {
-    /* In this case, the slave is certainly valid because a check is already
-     * done in _modbus_rtu_listen */
-    puiResponse[0] = uiSlave;
-    puiResponse[1] = uiFunctionCode;
+    /* Extract from MODBUS Messaging on TCP/IP Implementation
+       Guide V1.0b (page 23/46):
+       The transaction identifier is used to associate the future
+       response with the puiRequestuest. */
+    puiResponse[0] = (m_uiResponseTransactionId >> 8);
+    puiResponse[1] = (m_uiResponseTransactionId & 0x00ff);
 
-    return _MODBUS_RTU_PRESET_RSP_LENGTH;
+    /* Protocol Modbus */
+    puiResponse[2] = 0;
+    puiResponse[3] = 0;
+
+    /* Length will be set later by send_msg (4 and 5) */
+
+    /* The slave ID is copied from the indication */
+    puiResponse[6] = uiSlave;
+    puiResponse[7] = uiFunctionCode;
+
+    return _MODBUS_TCP_PRESET_RSP_LENGTH;
 }
 
 //-----------------------------------------------------------------------------------------------------
-uint16_t CModbusRtu::Send(uint8_t *puiMessage, uint16_t uiLength)
+uint16_t CModbusTcp::Send(uint8_t *puiMessage, uint16_t uiLength)
 {
     return m_pxCommunicationDevice -> Write(puiMessage, uiLength);
 }
 
 //-----------------------------------------------------------------------------------------------------
-int16_t CModbusRtu::Receive(uint8_t *puiDestination, uint16_t uiLength)
+int16_t CModbusTcp::Receive(uint8_t *puiDestination, uint16_t uiLength)
 {
     return m_pxCommunicationDevice -> Read(puiDestination, uiLength);
 }
 
 //-----------------------------------------------------------------------------------------------------
-int8_t CModbusRtu::FrameCheck(uint8_t *puiSourse, uint16_t uiLength)
+int8_t CModbusTcp::FrameCheck(uint8_t *puiSourse, uint16_t uiLength)
 {
     if (uiLength < _MIN_MESSAGE_LENGTH)
     {
         return 0;
     }
 
-    uint16_t uiCrc = ((static_cast<uint16_t>(puiSourse[uiLength - 1]) << 8) |
-                      (static_cast<uint16_t>(puiSourse[uiLength - 2])));
-    uint16_t uiCrcTemp = usCrc16(puiSourse,
-                                 (uiLength - _MODBUS_RTU_CHECKSUM_LENGTH));
-    if (usCrc16(puiSourse,
-                (uiLength - _MODBUS_RTU_CHECKSUM_LENGTH)) == uiCrc)
-    {
-        return 1;
-    }
-    else
-    {
-        return 0;
-    }
+    return 1;
 }
 
 //-----------------------------------------------------------------------------------------------------
-void CModbusRtu::Fsm(void)
+void CModbusTcp::Fsm(void)
 {
     switch (GetFsmState())
     {
@@ -206,24 +222,14 @@ void CModbusRtu::Fsm(void)
     case IDDLE:
         break;
 
-    case START_REQUEST:
-        ReceiveDisable();
+    case REQUEST_ENABLE:
+        m_pxCommunicationDevice -> Listen();
         GetTimerPointer() -> Set(m_uiReceiveTimeout);
-        SetMessageLength(0);
-        ReceiveEnable();
-        SetFsmState(WAITING_MESSAGE_REQUEST);
+        SetFsmState(WAITING_ACCEPT);
         break;
 
-    case WAITING_MESSAGE_REQUEST:
-        iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_RTU_MAX_ADU_LENGTH - GetMessageLength()));
-
-        if (iBytesNumber > 0)
-        {
-            SetMessageLength(GetMessageLength() + iBytesNumber);
-            GetTimerPointer() -> Set(m_uiGuardTimeout);
-            SetFsmState(RECEIVE_MESSAGE_REQUEST);
-        }
-        else if (iBytesNumber == -1)
+    case WAITING_ACCEPT:
+        if (m_pxCommunicationDevice -> Accept())
         {
             SetFsmState(START_REQUEST);
         }
@@ -231,22 +237,51 @@ void CModbusRtu::Fsm(void)
         // «акончилось врем€ ожидани€ запроса(15 секунд)?
         if (GetTimerPointer() -> IsOverflow())
         {
-            SetFsmState(START_REQUEST);
+            SetFsmState(REQUEST_ERROR);
+        }
+        break;
+
+    case START_REQUEST:
+//        ReceiveDisable();
+        GetTimerPointer() -> Set(m_uiReceiveTimeout);
+        SetMessageLength(0);
+//        ReceiveEnable();
+        SetFsmState(WAITING_MESSAGE_REQUEST);
+        break;
+
+    case WAITING_MESSAGE_REQUEST:
+        iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_TCP_MAX_ADU_LENGTH - GetMessageLength()));
+
+        if (iBytesNumber > 0)
+        {
+            SetMessageLength(GetMessageLength() + iBytesNumber);
+            GetTimerPointer() -> Set(m_uiGuardTimeout);
+            SetFsmState(RECEIVE_MESSAGE_REQUEST);
+        }
+        else if (iBytesNumber == 0)
+        {
+            SetFsmState(REQUEST_ERROR);
+        }
+
+        // «акончилось врем€ ожидани€ запроса(15 секунд)?
+        if (GetTimerPointer() -> IsOverflow())
+        {
+            SetFsmState(REQUEST_ERROR);
         }
 
         break;
 
     case RECEIVE_MESSAGE_REQUEST:
-        iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_RTU_MAX_ADU_LENGTH - GetMessageLength()));
+        iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_TCP_MAX_ADU_LENGTH - GetMessageLength()));
 
         if (iBytesNumber > 0)
         {
             SetMessageLength(GetMessageLength() + iBytesNumber);
             GetTimerPointer() -> Set(m_uiGuardTimeout);
         }
-        else if (iBytesNumber == -1)
+        else if (iBytesNumber == 0)
         {
-            SetFsmState(START_REQUEST);
+            SetFsmState(REQUEST_ERROR);
         }
 
         // ѕрин€т пакет(закончилось врем€ ожидани€ следующего бода(3.5 бод))?
@@ -258,13 +293,15 @@ void CModbusRtu::Fsm(void)
             }
             else
             {
-                SetFsmState(START_REQUEST);
+                SetFsmState(STOP_REQUEST);
             }
         }
 
         break;
 
     case REQUEST_PROCESSING_REQUEST:
+        m_uiResponseTransactionId = (m_puiRxBuffer[0] << 8) + m_puiRxBuffer[1];
+
         if (RequestProcessing(m_puiRxBuffer, m_puiTxBuffer, GetMessageLength()))
         {
 //            CPlatform::TxLedOn();
@@ -273,7 +310,7 @@ void CModbusRtu::Fsm(void)
         else
         {
             //            CPlatform::TxLedOff();
-            SetFsmState(START_REQUEST);
+            SetFsmState(STOP_REQUEST);
         }
         break;
 
@@ -299,22 +336,28 @@ void CModbusRtu::Fsm(void)
         {
             TransmitDisable();
 //            CPlatform::TxLedOff();
-            SetFsmState(START_REQUEST);
+            SetFsmState(STOP_REQUEST);
         }
 
         // «акончилось врем€ ожидани€ окончани€ передачи?
         if (GetTimerPointer() -> IsOverflow())
         {
 //            CPlatform::TxLedOff();
-            SetFsmState(START_REQUEST);
+            SetFsmState(REQUEST_ERROR);
         }
 
         break;
 
-//        case STOP_REQUEST:
-//            ReceiveDisable();
-//            SetFsmState(IDDLE);
-//            break;
+    case STOP_REQUEST:
+//        ReceiveDisable();
+        SetFsmState(START_REQUEST);
+        break;
+
+    case REQUEST_ERROR:
+//        ReceiveDisable();
+        m_pxCommunicationDevice -> Close();
+        SetFsmState(REQUEST_ENABLE);
+        break;
 
 //-----------------------------------------------------------------------------------------------------
 // ModbusMaster
@@ -327,7 +370,7 @@ void CModbusRtu::Fsm(void)
         break;
 
     case WAITING_MESSAGE_CONFIRMATION:
-        iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_RTU_MAX_ADU_LENGTH - GetMessageLength()));
+        iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_TCP_MAX_ADU_LENGTH - GetMessageLength()));
 
         if (iBytesNumber > 0)
         {
@@ -337,19 +380,19 @@ void CModbusRtu::Fsm(void)
         }
         else if (iBytesNumber == -1)
         {
-            SetFsmState(STOP_REQUEST);
+            SetFsmState(STOP_CONFIRMATION);
         }
 
         // «акончилось врем€ ожидани€ ответа(500 милисекунд)?
         if (GetTimerPointer() -> IsOverflow())
         {
-            SetFsmState(STOP_REQUEST);
+            SetFsmState(STOP_CONFIRMATION);
         }
 
         break;
 
     case RECEIVE_MESSAGE_CONFIRMATION:
-        iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_RTU_MAX_ADU_LENGTH - GetMessageLength()));
+        iBytesNumber = Receive((m_puiRxBuffer + GetMessageLength()), (MODBUS_TCP_MAX_ADU_LENGTH - GetMessageLength()));
 
         if (iBytesNumber > 0)
         {
@@ -358,7 +401,7 @@ void CModbusRtu::Fsm(void)
         }
         else if (iBytesNumber == -1)
         {
-            SetFsmState(STOP_REQUEST);
+            SetFsmState(STOP_CONFIRMATION);
         }
 
         // ѕрин€т пакет(закончилось врем€ ожидани€ следующего бода(3.5 бод))?
@@ -370,7 +413,7 @@ void CModbusRtu::Fsm(void)
             }
             else
             {
-                SetFsmState(STOP_REQUEST);
+                SetFsmState(STOP_CONFIRMATION);
             }
         }
 
@@ -379,11 +422,11 @@ void CModbusRtu::Fsm(void)
     case ANSWER_PROCESSING_CONFIRMATION:
         if (AnswerProcessing(m_puiRxBuffer, GetMessageLength()))
         {
-            SetFsmState(STOP_REQUEST);
+            SetFsmState(STOP_CONFIRMATION);
         }
         else
         {
-            SetFsmState(STOP_REQUEST);
+            SetFsmState(STOP_CONFIRMATION);
         }
         break;
 
@@ -416,12 +459,12 @@ void CModbusRtu::Fsm(void)
         if (GetTimerPointer() -> IsOverflow())
         {
 //            CPlatform::TxLedOff();
-            SetFsmState(STOP_REQUEST);
+            SetFsmState(STOP_CONFIRMATION);
         }
 
         break;
 
-    case STOP_REQUEST:
+    case STOP_CONFIRMATION:
         ReceiveDisable();
         TransmitEnable();
         SetFsmState(IDDLE);

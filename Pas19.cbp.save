@@ -32,10 +32,12 @@
 			<Add directory="include" />
 		</Compiler>
 		<Unit filename="Modbus/Modbus.cpp" />
-		<Unit filename="Modbus/ModbusRTU.cpp" />
-		<Unit filename="Modbus/ModbusRTU.h" />
+		<Unit filename="Modbus/Modbus.h" />
+		<Unit filename="Modbus/ModbusRtu.cpp" />
+		<Unit filename="Modbus/ModbusRtu.h" />
+		<Unit filename="Modbus/ModbusTcp.cpp" />
+		<Unit filename="Modbus/ModbusTcp.h" />
 		<Unit filename="Modbus/errno-base.h" />
-		<Unit filename="Modbus/modbus.h" />
 		<Unit filename="include/Configuration.h" />
 		<Unit filename="include/Crc.h" />
 		<Unit filename="include/DataStore.h" />

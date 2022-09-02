@@ -21,7 +21,8 @@
 #include "Configuration.h"
 #include "MainProductionCycle.h"
 #include "DataStore.h"
-#include "ModbusRTU.h"
+#include "ModbusRtu.h"
+#include "ModbusTcp.h"
 
 using namespace std;
 
@@ -90,7 +91,7 @@ int main()
 
     if (!(pxDataStoreFileSystem -> Check()))
     {
-        cerr << "DataStore check error" << endl;
+        cout << "DataStore check error" << endl;
         cout << "CreateServiceSection" << endl;
         pxDataStoreFileSystem -> CreateServiceSection();
 
@@ -132,7 +133,7 @@ int main()
     }
     else
     {
-        cerr << "DataStore check ok" << endl;
+        cout << "DataStore check ok" << endl;
     }
 
 //    if (!(pxDataStoreFileSystem -> ReadServiceSection()))
@@ -166,11 +167,11 @@ int main()
 //    }
 
     CModbusRtu xModbusRtuUpperLevel;
-    xModbusRtuUpperLevel.SerialPortInit("/dev/ttyO1",
-                                        9600,
-                                        8,
-                                        'N',
-                                        2);
+    xModbusRtuUpperLevel.CommunicationDeviceInit("/dev/ttyO1",
+            9600,
+            8,
+            'N',
+            2);
     xModbusRtuUpperLevel.WorkingArraysInit(m_auiReceiveMessageBuff,
                                            m_auiTransmitMessageBuff,
                                            m_aucRtuCoilsArray,
@@ -185,9 +186,31 @@ int main()
     xModbusRtuUpperLevel.SlaveSet(1);
     xModbusRtuUpperLevel.SetFsmState(CModbusRtu::START_REQUEST);
 
+
+    CModbusTcp xModbusTcpUpperLevel;
+    xModbusTcpUpperLevel.CommunicationDeviceInit("127.0.0.1",
+            502);
+//    xModbusTcpUpperLevel.CommunicationDeviceInit("192.168.0.5",
+//            503);
+    xModbusTcpUpperLevel.WorkingArraysInit(m_auiReceiveMessageBuff,
+                                           m_auiTransmitMessageBuff,
+                                           m_aucRtuCoilsArray,
+                                           m_aucRtuDiscreteInputsArray,
+                                           m_aucRtuHoldingRegistersArray,
+                                           m_aucRtuInputRegistersArray,
+                                           COILS_WORK_ARRAY_LENGTH,
+                                           DISCRETE_INPUTS_ARRAY_LENGTH,
+                                           HOLDING_REGISTERS_ARRAY_LENGTH,
+                                           INPUT_REGISTERS_ARRAY_LENGTH
+                                          );
+    xModbusTcpUpperLevel.SlaveSet(1);
+    xModbusTcpUpperLevel.SetFsmState(CModbusTcp::START_REQUEST);
+    xModbusTcpUpperLevel.SetFsmState(CModbusTcp::START_REQUEST);
+
     while (1)
     {
         xModbusRtuUpperLevel.Fsm();
+        xModbusTcpUpperLevel.Fsm();
         usleep(1000);
     }
 
@@ -195,7 +218,7 @@ int main()
     return 0;
 }
 
-
+IDDLE
 
 //                cout << hex << uppercase << setw(2) << setfill('0') << (unsigned int)pucSourceTemp[i + j] << " ";
 //            }
@@ -213,48 +236,55 @@ int main()
 //C:\SysGCC\beaglebone\bin
 //-pthread -lrt
 //sudo /home/debian/Pas19
-#include <stddef.h>
-#include <stdio.h>
-#include <sys/time.h>
-#include <sys/select.h>
-#include <unistd.h>
-#include <fcntl.h>
 
-int main(int argc, char **argv) {
-    int ready;
-    struct timeval *pto;
-    fd_set readfds, writefds;
-    char buf[1024];
-    int bytes;
-    int fd = 0; // stdin
 
-    pto = NULL;
-    FD_ZERO(&readfds);
-    FD_ZERO(&writefds);
-    FD_SET(fd, &readfds);
+//#include <stddef.h>
+//#include <stdio.h>
+//#include <sys/time.h>
+//#include <sys/select.h>
+//#include <unistd.h>
+//#include <fcntl.h>
+//
+//int main(int argc, char **argv) {
+//    int ready;
+//    struct timeval *pto;
+//    fd_set readfds, writefds;
+//    char buf[1024];
+//    int bytes;
+//    int fd = 0; // stdin
+//
+//    pto = NULL;
+//    FD_ZERO(&readfds);
+//    FD_ZERO(&writefds);
+//    FD_SET(fd, &readfds);
+//
+//    int flags = fcntl(fd, F_GETFL, 0);
+//    fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+//
+//    while (1) {
+//        ready = select(1, &readfds, &writefds, NULL, pto);
+//
+//        if (ready == -1) {
+//            printf("got -1\n");
+//            return 1;
+//        }
+//
+//        printf("ready = %d\n", ready);
+//
+//        bytes = read(fd, buf, 1024);
+//        if (bytes == 0) {
+//            printf("all done\n");
+//            return 0;
+//        } else if (bytes > 0) {
+//            buf[bytes] = '\0';
+//            printf("read: %s\n", buf);
+//        } else {
+//            printf("got an error\n");
+//        }
+//    }
+//}
 
-    int flags = fcntl(fd, F_GETFL, 0);
-    fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
-    while (1) { 
-        ready = select(1, &readfds, &writefds, NULL, pto);
 
-        if (ready == -1) {
-            printf("got -1\n");
-            return 1;
-        }
-
-        printf("ready = %d\n", ready);
-
-        bytes = read(fd, buf, 1024);
-        if (bytes == 0) {
-            printf("all done\n");
-            return 0;
-        } else if (bytes > 0) {
-            buf[bytes] = '\0';
-            printf("read: %s\n", buf);
-        } else {
-            printf("got an error\n");
-        }
-    }
-}
+//sudo start-stop-daemon -Kvx /home/debian/Pas19
+//sudo chown -R debian /home/debian

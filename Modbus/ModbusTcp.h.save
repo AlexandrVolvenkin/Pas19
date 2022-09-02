@@ -5,8 +5,8 @@
 //  email       : aav-36@mail.ru
 //  GitHub      : https://github.com/AlexandrVolvenkin
 //-----------------------------------------------------------------------------------------------------
-#ifndef CMODBUSRTU_H
-#define CMODBUSRTU_H
+#ifndef CMODBUSTCP_H
+#define CMODBUSTCP_H
 
 #include <stdint.h>
 #include "Modbus.h"
@@ -19,30 +19,33 @@
  */
 //#define MODBUS_RTU_MAX_ADU_LENGTH  256
 
-#define _MODBUS_RTU_35_TIMEOUT        (((1000000UL / MODBUS_RTU_BAUD_RATE) * 8UL * 4UL) / 1000) + 1
 
-#define _MODBUS_RTU_HEADER_LENGTH      1
-#define _MODBUS_RTU_PRESET_REQ_LENGTH  6
-#define _MODBUS_RTU_PRESET_RSP_LENGTH  2
+#define MODBUS_TCP_DEFAULT_PORT   502
+#define MODBUS_TCP_SLAVE         0x11
 
-#define _MODBUS_RTU_CHECKSUM_LENGTH    2
+/* Modbus_Application_Protocol_V1_1b.pdf Chapter 4 Section 1 Page 5
+ * TCP MODBUS ADU = 253 bytes + MBAP (7 bytes) = 260 bytes
+ */
+#define MODBUS_TCP_MAX_ADU_LENGTH  260
 
-#define MODBUS_RTU_RS232 0
-#define MODBUS_RTU_RS485 1
+#define _MODBUS_TCP_HEADER_LENGTH      7
+#define _MODBUS_TCP_PRESET_REQ_LENGTH 12
+#define _MODBUS_TCP_PRESET_RSP_LENGTH  8
+
+#define _MODBUS_TCP_CHECKSUM_LENGTH    0
 
 //-----------------------------------------------------------------------------------------------------
-class CModbusRtu : public CModbus
+class CModbusTcp : public CModbus
 {
 public:
-    CModbusRtu();
-    virtual ~CModbusRtu();
+    CModbusTcp();
+    virtual ~CModbusTcp();
 
-    void CommunicationDeviceInit(const char* pccPortName,
-                                 uint32_t uiBaudRate,
-                                 uint8_t uiDataBits,
-                                 char cParity,
-                                 uint8_t uiStopBit);
-    void WorkingArraysInit(uint8_t *puiCoils,
+    void CommunicationDeviceInit(const char* pccIpAddress,
+                                 uint16_t uiPort);
+    void WorkingArraysInit(uint8_t *puiRxBuffer,
+                           uint8_t *puiTxBuffer,
+                           uint8_t *puiCoils,
                            uint8_t *puiDiscreteInputs,
                            uint16_t *pui16HoldingRegisters,
                            uint16_t *pui16InputRegisters,
@@ -99,14 +102,16 @@ private:
 
     uint16_t HEADER_LENGTH(void)
     {
-        return 1;
+        return 7;
     };
     uint16_t CRC_LENGTH(void)
     {
-        return 2;
+        return 0;
     };
 
-    CSerialPort* m_pxCommunicationDevice;
+    CTcpCommunicationDevice* m_pxCommunicationDevice;
+    uint16_t m_uiRequestTransactionId = 0;
+    uint16_t m_uiResponseTransactionId = 0;
     // таймоут по отсутствию следующего байта 3.5 бода.
     uint16_t m_uiGuardTimeout;
     // таймоут по отсутствию запроса.
@@ -114,7 +119,9 @@ private:
     // таймоут по отсутствию подтверждения.
     const static uint16_t m_uiConfirmationTimeout = 500;
     const static uint16_t m_uiTransmitDelayTimeout = 5;
+
+    uint8_t m_auiReceiveMessageBuff[MODBUS_TCP_MAX_ADU_LENGTH];
+    uint8_t m_auiTransmitMessageBuff[MODBUS_TCP_MAX_ADU_LENGTH];
 };
 
-//-----------------------------------------------------------------------------------------------------
-#endif // CMODBUSRTU_H
+#endif // CMODBUSTCP_H
