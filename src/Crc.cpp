@@ -191,3 +191,21 @@ int iCrcSummOneByteCompare(unsigned char *puiSource,
     }
 }
 
+//-----------------------------------------------------------------------------------------------------
+//
+uint8_t HammingDistanceCrc(uint8_t* puiSource,
+                           uint8_t uiLength)
+{
+    uint8_t uiPrevious = 0;
+    uint8_t uiCrc = 0;
+
+    for (uint8_t i = 0; i < uiLength; i++)
+    {
+        uint8_t uiCurrent = puiSource[i];
+        uiCrc += (uiPrevious ^ uiCurrent);
+        uiPrevious = uiCurrent;
+    }
+
+    return uiCrc;
+}
+

@@ -1,0 +1,47 @@
+//-----------------------------------------------------------------------------------------------------
+//  Source      : FileName.cpp
+//  Created     : 01.06.2022
+//  Author      : Alexandr Volvenkin
+//  email       : aav-36@mail.ru
+//  GitHub      : https://github.com/AlexandrVolvenkin
+//-----------------------------------------------------------------------------------------------------
+#ifndef CDRIVER_H
+#define CDRIVER_H
+
+#include <stdint.h>
+#include "DataTypes.h"
+
+//-----------------------------------------------------------------------------------------------------
+class CDriver
+{
+public:
+    virtual void Allocate(TMemoryAllocationConext &xMemoryAllocationConext) = 0;
+    virtual uint8_t DataExchange(void) = 0;
+
+protected:
+    uint8_t m_uiType;
+};
+
+//-----------------------------------------------------------------------------------------------------
+#endif // CDRIVER_H
+
+
+Формат кадра запроса и ответа канального уровня Spi:
+
+| FunctionCode | Length | Pdu data | Crc |
+
+FunctionCode - 1 байт.
+Length - 1 байт.
+Crc - 1 байт(сумма расстояний Хемминга между всеми байтами кроме Crc):
+
+uint8_t Crc = 0;
+for (uint8_t i = 0; i < Length; i++)
+{
+    Crc += (Buffer[i] ^ Buffer[i + 1]);
+}
+
+Фрагмент циклического обмена:
+ Request - кадр запроса, Responce - кадр ответа.
+
+    Responce[i - 2]   Responce[i - 1]   Responce[i]   Responce[i + 1]
+     Request[i - 1]    Request[i]    Request[i + 1]   Request[i + 2]

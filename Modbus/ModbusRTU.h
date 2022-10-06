@@ -37,7 +37,7 @@ public:
     CModbusRtu();
     virtual ~CModbusRtu();
 
-    void CommunicationDeviceInit(const char* pccPortName,
+    void CommunicationDeviceInit(const char* pccDeviceName,
                                  uint32_t uiBaudRate,
                                  uint8_t uiDataBits,
                                  char cParity,

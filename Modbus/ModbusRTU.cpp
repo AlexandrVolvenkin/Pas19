@@ -31,14 +31,14 @@ CModbusRtu::~CModbusRtu()
 }
 
 //-----------------------------------------------------------------------------------------------------
-void CModbusRtu::CommunicationDeviceInit(const char* pccPortName,
+void CModbusRtu::CommunicationDeviceInit(const char* pccDeviceName,
                                 uint32_t uiBaudRate,
                                 uint8_t uiDataBits,
                                 char cParity,
                                 uint8_t uiStopBit)
 {
     m_pxCommunicationDevice -> Init();
-    m_pxCommunicationDevice -> SetPortName(pccPortName);
+    m_pxCommunicationDevice -> SetPortName(pccDeviceName);
     m_pxCommunicationDevice -> SetBaudRate(uiBaudRate);
     m_pxCommunicationDevice -> SetDataBits(uiDataBits);
     m_pxCommunicationDevice -> SetParity(cParity);

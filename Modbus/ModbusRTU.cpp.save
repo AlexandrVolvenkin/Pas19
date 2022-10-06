@@ -9,36 +9,40 @@
 #include <Crc.h>
 #include <Dfa.h>
 #include "Platform.h"
-#include <ModbusRTU.h>
+#include <ModbusRtu.h>
 
 using namespace std;
 
 //-----------------------------------------------------------------------------------------------------
 CModbusRtu::CModbusRtu()
 {
-    m_pxSerialPort = new CSerialPort();
+    m_pxCommunicationDevice = new CSerialPort();
+    m_puiRxBuffer = new uint8_t[MODBUS_RTU_MAX_ADU_LENGTH];
+    m_puiTxBuffer = new uint8_t[MODBUS_RTU_MAX_ADU_LENGTH];
     SetFsmState(IDDLE);
 }
 
 //-----------------------------------------------------------------------------------------------------
 CModbusRtu::~CModbusRtu()
 {
-    delete m_pxSerialPort;
+    delete[] m_puiTxBuffer;
+    delete[] m_puiRxBuffer;
+    delete m_pxCommunicationDevice;
 }
 
 //-----------------------------------------------------------------------------------------------------
-void CModbusRtu::CommunicationDeviceInit(const char* pccPortName,
+void CModbusRtu::CommunicationDeviceInit(const char* pccDeviceName,
                                 uint32_t uiBaudRate,
                                 uint8_t uiDataBits,
                                 char cParity,
                                 uint8_t uiStopBit)
 {
-    m_pxSerialPort -> Init();
-    m_pxSerialPort -> SetPortName(pccPortName);
-    m_pxSerialPort -> SetBaudRate(uiBaudRate);
-    m_pxSerialPort -> SetDataBits(uiDataBits);
-    m_pxSerialPort -> SetParity(cParity);
-    m_pxSerialPort -> SetStopBit(uiStopBit);
+    m_pxCommunicationDevice -> Init();
+    m_pxCommunicationDevice -> SetPortName(pccPortName);
+    m_pxCommunicationDevice -> SetBaudRate(uiBaudRate);
+    m_pxCommunicationDevice -> SetDataBits(uiDataBits);
+    m_pxCommunicationDevice -> SetParity(cParity);
+    m_pxCommunicationDevice -> SetStopBit(uiStopBit);
 
     m_uiGuardTimeout = ((((1000000UL / uiBaudRate) * 8UL * 4UL) / 1000UL) + 1);
 }
@@ -55,8 +59,28 @@ void CModbusRtu::WorkingArraysInit(uint8_t *puiRxBuffer,
                                    uint16_t uiHoldingRegistersNumber,
                                    uint16_t uiInputRegistersNumber)
 {
-    m_puiRxBuffer = puiRxBuffer;
-    m_puiTxBuffer = puiTxBuffer;
+//    m_puiRxBuffer = puiRxBuffer;
+//    m_puiTxBuffer = puiTxBuffer;
+    m_puiCoils = puiCoils;
+    m_puiDiscreteInputs = puiDiscreteInputs;
+    m_pui16HoldingRegisters = pui16HoldingRegisters;
+    m_pui16InputRegisters = pui16InputRegisters;
+    m_uiCoilsNumber = uiCoilsNumber;
+    m_uiDiscreteInputsNumber = uiDiscreteInputsNumber;
+    m_uiHoldingRegistersNumber = uiHoldingRegistersNumber;
+    m_uiInputRegistersNumber = uiInputRegistersNumber;
+}
+
+//-----------------------------------------------------------------------------------------------------
+void CModbusRtu::WorkingArraysInit(uint8_t *puiCoils,
+                                   uint8_t *puiDiscreteInputs,
+                                   uint16_t *pui16HoldingRegisters,
+                                   uint16_t *pui16InputRegisters,
+                                   uint16_t uiCoilsNumber,
+                                   uint16_t uiDiscreteInputsNumber,
+                                   uint16_t uiHoldingRegistersNumber,
+                                   uint16_t uiInputRegistersNumber)
+{
     m_puiCoils = puiCoils;
     m_puiDiscreteInputs = puiDiscreteInputs;
     m_pui16HoldingRegisters = pui16HoldingRegisters;
@@ -70,31 +94,31 @@ void CModbusRtu::WorkingArraysInit(uint8_t *puiRxBuffer,
 ////-----------------------------------------------------------------------------------------------------
 //void CModbusRtu::Reset(void)
 //{
-//    m_pxSerialPort -> Reset();
+//    m_pxCommunicationDevice -> Reset();
 //}
 
 //-----------------------------------------------------------------------------------------------------
 void CModbusRtu::ReceiveEnable(void)
 {
-    m_pxSerialPort -> Open();
+    m_pxCommunicationDevice -> Open();
 }
 
 //-----------------------------------------------------------------------------------------------------
 void CModbusRtu::ReceiveDisable(void)
 {
-    m_pxSerialPort -> Close();
+    m_pxCommunicationDevice -> Close();
 }
 
 //-----------------------------------------------------------------------------------------------------
 void CModbusRtu::TransmitEnable(void)
 {
-    m_pxSerialPort -> Open();
+    m_pxCommunicationDevice -> Open();
 }
 
 //-----------------------------------------------------------------------------------------------------
 void CModbusRtu::TransmitDisable(void)
 {
-    m_pxSerialPort -> Close();
+    m_pxCommunicationDevice -> Close();
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -140,13 +164,13 @@ uint16_t CModbusRtu::ResponseBasis(uint8_t uiSlave, uint8_t uiFunctionCode, uint
 //-----------------------------------------------------------------------------------------------------
 uint16_t CModbusRtu::Send(uint8_t *puiMessage, uint16_t uiLength)
 {
-    return m_pxSerialPort -> Write(puiMessage, uiLength);
+    return m_pxCommunicationDevice -> Write(puiMessage, uiLength);
 }
 
 //-----------------------------------------------------------------------------------------------------
 int16_t CModbusRtu::Receive(uint8_t *puiDestination, uint16_t uiLength)
 {
-    return m_pxSerialPort -> Read(puiDestination, uiLength);
+    return m_pxCommunicationDevice -> Read(puiDestination, uiLength);
 }
 
 //-----------------------------------------------------------------------------------------------------

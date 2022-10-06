@@ -21,5 +21,7 @@ int iCrcSummOneByteCompare(unsigned char *puiSource, unsigned int nuiNbyte);
 //unsigned short usCrc16(unsigned char *puiSource, unsigned short uiLength);
 int iCrc16Check(unsigned char *puiSource, unsigned short uiLength);
 uint16_t usCrc16(const unsigned char *puiSource, uint16_t uiLength);
+uint8_t HammingDistanceCrc(uint8_t* puiSource,
+                           uint8_t uiLength);
 
 #endif // CRC_H_INCLUDED

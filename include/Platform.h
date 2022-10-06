@@ -21,8 +21,11 @@
 #include <linux/serial.h>
 #include <sys/types.h>
 #include <sys/select.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <linux/spi/spidev.h>
 
-# include <sys/socket.h>
+#include <sys/socket.h>
 
 #if defined(__OpenBSD__) || (defined(__FreeBSD__) && __FreeBSD__ < 5)
 # define OS_BSD
@@ -41,13 +44,15 @@
 /* Include definition for RS485 ioctls: TIOCGRS485 and TIOCSRS485 */
 #include <sys/ioctl.h>
 
+#include "Configuration.h"
+
 //-----------------------------------------------------------------------------------------------------
 class CCommunicationDevice
 {
 public:
     virtual void Init(void) = 0;
 
-//    virtual void SetPortName(const char* pccPortName) = 0;
+//    virtual void SetPortName(const char* pccDeviceName) = 0;
 //    virtual const char* GetPortName(void) = 0;
 //    virtual void SetBaudRate(uint32_t uiBaudRate) = 0;
 //    virtual void SetDataBits(uint8_t uiDataBits) = 0;
@@ -62,6 +67,11 @@ public:
     virtual int8_t Close(void) = 0;
     virtual int16_t Write(uint8_t * , uint16_t ) = 0;
     virtual int16_t Read(uint8_t * , uint16_t ) = 0;
+    virtual int Exchange(uint8_t uiAddress,
+                         unsigned char *pucTxBuff,
+                         unsigned char *pucRxBuff,
+                         int iLength,
+                         int iSpeed) = 0;
     virtual bool IsDataWrited(void) = 0;
 //    virtual bool IsDataWrited(void)
 //    {
@@ -117,7 +127,7 @@ public:
 
 //-----------------------------------------------------------------------------------------------------
     void Init(void);
-    void SetPortName(const char* pccPortName);
+    void SetPortName(const char* pccDeviceName);
     const char* GetPortName(void);
     void SetBaudRate(uint32_t uiBaudRate);
     void SetDataBits(uint8_t uiDataBits);
@@ -129,6 +139,11 @@ public:
 //    bool IsDataAvailable(void);
     int16_t Write(uint8_t * , uint16_t );
     int16_t Read(uint8_t * , uint16_t );
+    int Exchange(uint8_t uiAddress,
+                 unsigned char *pucTxBuff,
+                 unsigned char *pucRxBuff,
+                 int iLength,
+                 int iSpeed);
     bool IsDataWrited(void)
     {
         if (m_bDataIsWrited)
@@ -146,7 +161,7 @@ public:
 //-----------------------------------------------------------------------------------------------------
 private:
 protected:
-    const char *m_pccPortName;
+    const char *m_pccDeviceName;
     /* Socket or file descriptor */
     int32_t m_iDeviceDescriptor;
     struct termios m_xTios;
@@ -209,6 +224,11 @@ public:
 //    bool IsDataAvailable(void);
     int16_t Write(uint8_t * , uint16_t );
     int16_t Read(uint8_t * , uint16_t );
+    int Exchange(uint8_t uiAddress,
+                 unsigned char *pucTxBuff,
+                 unsigned char *pucRxBuff,
+                 int iLength,
+                 int iSpeed);
     bool IsDataWrited(void)
     {
         if (m_bDataIsWrited)
@@ -249,6 +269,148 @@ protected:
 //    uint16_t m_nuiTxBuffByteCounter;
 //    uint8_t* m_puiRxBuffer;
 //    uint16_t m_nuiRxBuffByteCounter;
+};
+//-----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+//-----------------------------------------------------------------------------------------------------
+#define SPI_PATH "/dev/spidev0.0"
+#define TX_RX_BUFF_SIZE 256
+#define SPI_MODE SPI_MODE_0
+#define SPI_MODE32 SPI_3WIRE
+#define BITS_PER_WORD 8
+#define SPEED_IN_HZ 150000UL
+#define LOW_SPEED_IN_HZ SPEED_IN_HZ
+
+#define SPI_CHIP_SELECT_PIN_0  7 /* (R2) lcd_data1.gpio2[7] A0*/
+#define SPI_CHIP_SELECT_PIN_0_PORT  GPIO_PORT_2
+#define SPI_CHIP_SELECT_PIN_1  11  /* (T2) lcd_data5.gpio2[11] A1*/
+#define SPI_CHIP_SELECT_PIN_1_PORT  GPIO_PORT_2
+#define SPI_CHIP_SELECT_PIN_2  8  /* (R3) lcd_data2.gpio2[8] A2*/
+#define SPI_CHIP_SELECT_PIN_2_PORT  GPIO_PORT_2
+#define SPI_CHIP_SELECT_PIN_3  6  /* (R1) lcd_data0.gpio2[6] A3*/
+#define SPI_CHIP_SELECT_PIN_3_PORT  GPIO_PORT_2
+#define SPI_CHIP_ENABLE_PIN  12 /* (T3) lcd_data6.gpio2[12] ENABLE*/
+#define SPI_CHIP_ENABLE_PIN_PORT  GPIO_PORT_2
+#define SPI_CHIP_MIND_ENABLE_PIN  16 /* (U3) lcd_data10.gpio2[16] SS0*/
+#define SPI_CHIP_MIND_ENABLE_PIN_PORT  GPIO_PORT_2
+
+//-----------------------------------------------------------------------------------------------------
+class CSpi : public CCommunicationDevice
+{
+public:
+    CSpi();
+    virtual ~CSpi();
+
+    void Init(void);
+    int8_t Open(void);
+    int8_t Close(void);
+    int Exchange(uint8_t uiAddress,
+                 unsigned char *pucTxBuff,
+                 unsigned char *pucRxBuff,
+                 int iLength,
+                 int iSpeed);
+    void ChipSelectPinSet(void);
+    void ChipSelectPinDelete(void);
+    void ChipSelectAddressSet(unsigned char ucAddress);
+
+    static const uint8_t BUFFER_LENGTH = 64;
+private:
+    const char *m_pccDeviceName;
+    /* Socket or file descriptor */
+    int32_t m_iDeviceDescriptor;
+    static const uint8_t aui8ModuleSlotNumberToSpiAddressMatching[SPI_MAX_BUS_ADDRESS];
+
+};
+//-----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+//-----------------------------------------------------------------------------------------------------
+#define CM_PER 0x44E00000
+#define CM_PER_L4LS_CLKSTCTRL_OFFSET 0x00
+#define CLKACTIVITY_GPIO_3_GDBCLK 21
+#define CLKACTIVITY_GPIO_2_GDBCLK 20
+#define CLKACTIVITY_GPIO_1_GDBCLK 19
+
+#define CM_PER_GPIO1_CLKCTRL_OFFSET 0xAC
+#define CM_PER_GPIO2_CLKCTRL_OFFSET 0xB0
+#define CM_PER_GPIO3_CLKCTRL_OFFSET 0xB4
+#define MODULEMODE_BIT_0 0
+#define MODULEMODE_BIT_1 1
+#define OPTFCLKEN_GPIO_X_GDBCLK 18
+
+#define GPIO0_ADDR 0x44E07000
+#define GPIO1_ADDR 0x4804C000
+#define GPIO2_ADDR 0x481AC000
+#define GPIO3_ADDR 0x481AE000
+#define GPIO_OE_OFFSET 0x134
+#define GPIO_DATAIN_OFFSET 0x138
+#define GPIO_DATAOUT_OFFSET 0x13C
+
+#define GPIO_PORT_0 0
+#define GPIO_PORT_1 1
+#define GPIO_PORT_2 2
+#define GPIO_PORT_3 3
+#define GPIO_PORT_QUANTITY 4
+
+#define SYSFS_GPIO_DIR "/sys/class/gpio"
+//#define POLL_TIMEOUT (3 * 1000) /* 3 seconds */
+#define MAX_BUF 64
+
+enum PIN_DIRECTION
+{
+    INPUT_PIN=0,
+    OUTPUT_PIN=1
+};
+
+enum PIN_VALUE
+{
+    LOW=0,
+    HIGH=1
+};
+
+struct TGpioControl
+{
+    unsigned long *pulCmPerMap;
+    unsigned long *apulGpioMmapPointers[GPIO_PORT_QUANTITY];
+    unsigned long aulGpioMmapAddresses[GPIO_PORT_QUANTITY];
+};
+
+//-----------------------------------------------------------------------------------------------------
+class CGpio
+{
+public:
+//    CGpio();
+//    virtual ~CGpio();
+
+    static void Init(void);
+    static int8_t Open(void);
+    static int8_t Close(void);
+    static void SetPinOutput(unsigned char ucPortN, unsigned char ucPinN);
+    static void SetPinInput(unsigned char ucPortN, unsigned char ucPinN);
+    static void SetPin(unsigned char ucPortN, unsigned char ucPinN);
+    static void ClearPin(unsigned char ucPortN, unsigned char ucPinN);
+
+private:
+//    const char *m_pccDeviceName;
+    /* Socket or file descriptor */
+    static int32_t m_iDeviceDescriptor;
+    static TGpioControl m_xGpioControl;
+
 };
 //-----------------------------------------------------------------------------------------------------
 
